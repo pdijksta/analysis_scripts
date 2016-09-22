@@ -30,6 +30,7 @@ for f in all_files:
 
     filln = file_info.group(1)
     time_of_interest = file_info.group(2)
+    main_key = filln + ' ' + time_of_interest
     beam = file_info.group(3)
     device = file_info.group(4)
     sey = file_info.group(5)
@@ -57,20 +58,18 @@ for f in all_files:
 
     heatload = np.sum(matfile['energ_eV_impact_hist'])*const_LHC_frev*const_e
 
-    if filln not in hl_dict.keys():
-        hl_dict[filln] = {}
-    if time_of_interest not in hl_dict[filln].keys():
-        hl_dict[filln][time_of_interest] = {}
-    if device not in hl_dict[filln][time_of_interest].keys():
-        hl_dict[filln][time_of_interest][device] = {}
-    if coast not in hl_dict[filln][time_of_interest][device].keys():
-        hl_dict[filln][time_of_interest][device][coast] = {}
-    if sey not in  hl_dict[filln][time_of_interest][device][coast].keys():
-        hl_dict[filln][time_of_interest][device][coast][sey] = [0, 0]
-        
-    # add up Beams 1 and 2 
-    hl_dict[filln][time_of_interest][device][coast][sey][0] += heatload
-    hl_dict[filln][time_of_interest][device][coast][sey][1] += 1
+    if main_key not in hl_dict.keys():
+        hl_dict[main_key] = {}
+    if device not in hl_dict[main_key].keys():
+        hl_dict[main_key][device] = {}
+    if coast not in hl_dict[main_key][device].keys():
+        hl_dict[main_key][device][coast] = {}
+    if sey not in hl_dict[main_key][device][coast].keys():
+        hl_dict[main_key][device][coast][sey] = [0, 0]
+
+    # add up Beams 1 and 2
+    hl_dict[main_key][device][coast][sey][0] += heatload
+    hl_dict[main_key][device][coast][sey][1] += 1
 
 #print(hl_dict)
 
