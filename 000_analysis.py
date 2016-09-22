@@ -12,7 +12,7 @@ import numpy as np
 # Arguments
 
 arg = argparse.ArgumentParser(description='')
-arg.add_argument('-g', help='Show global optimization', action='store_true')
+arg.add_argument('-g', help='Show global optimization, do not use this flag!', action='store_true')
 arg.add_argument('-d', help='Show heatloads for every device', action='store_true')
 arg.add_argument('-a', help='Show heatloads on arcs fill by fill', action='store_true')
 arg.add_argument('-q', help='Show heatloads on quads fill by fill', action='store_true')
@@ -37,9 +37,9 @@ sey_list = np.arange(1.1,1.46,0.05)
 
 len_dip = 14.3
 len_quad = 3.1
-dip_per_halfcell = 3
+dip_per_halfcell = 3.
 len_cell = 53.45
-len_q6 = 8
+len_q6 = 8.
 
 ticksize = 14
 plt.rcParams['axes.grid'] = True
@@ -79,16 +79,21 @@ length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 
 hl_measured = np.empty(shape=(len(dict_keys),len(arcs)))
 hl_measured_quads = np.empty(shape=(len(dict_keys),len(quads)))
+arc_uncertainty = np.empty(shape=hl_measured.shape)
+quad_uncertainty = np.empty(shape=hl_measured_quads.shape)
+
 for key_ctr in xrange(len(dict_keys)):
     main_key = dict_keys[key_ctr]
     for arc_ctr in xrange(len(arcs)):
         arc = arcs[arc_ctr]
         hl_measured[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][0]
+        arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][1]
     hl_measured[key_ctr,:] -= heatloads_dict[main_key][model_key][0]
 
     for quad_ctr in xrange(len(quads)):
         quad = quads[quad_ctr]
         hl_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0]
+        quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][1]
     hl_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0]
 
 
@@ -220,9 +225,9 @@ if args.d:
         sp.grid('on')
         if dev_ctr == len(device_list)-1:
             sp.set_xlabel('SEY Parameter',fontsize=18)
-        sp.set_ylabel('Heatload per m',fontsize=18)
+        sp.set_ylabel('Heatload per m [W]',fontsize=18)
         sp2 = sp.twinx()
-        sp2.set_ylabel('Heatload per half cell',fontsize=18)
+        sp2.set_ylabel('Heatload per half cell [W]',fontsize=18)
         sp2.grid('off')
 
         for coast_ctr in xrange(len(coast_strs)):
@@ -261,8 +266,12 @@ if args.a:
             sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
         sp.grid('on')
         sp.set_xlabel('SEY Parameter',fontsize=18)
-        sp.set_ylabel('Heatload',fontsize=18)
-        sp.set_title(scenarios_labels[key_ctr],fontsize=20)
+        sp.set_ylabel('Heat load [W]',fontsize=18)
+
+        uncertainty = np.mean(arc_uncertainty[key_ctr,:])
+        uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
+        sp.set_title(scenarios_labels[key_ctr]+'\n'+uncertainty_str, fontsize=20)
+
 
         for arc_ctr in xrange(len(arcs)):
             label = arcs[arc_ctr]
@@ -296,8 +305,15 @@ if args.q:
             sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
         sp.grid('on')
         sp.set_xlabel('SEY Parameter', fontsize=18)
-        sp.set_ylabel('Totel Heatload', fontsize=18)
-        sp.set_title(scenarios_labels[key_ctr], fontsize=20)
+        sp.set_ylabel('Totel heat load [W]', fontsize=18)
+
+        sp2 = sp.twinx()
+        sp2.set_ylabel('Heat load per m [W]', fontsize=18)
+        sp2.grid('off')
+
+        uncertainty = np.mean(quad_uncertainty[key_ctr,:])
+        uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
+        sp.set_title(scenarios_labels[key_ctr]+'\n'+uncertainty_str, fontsize=20)
 
         for quad_ctr in xrange(len(quads)):
             label = quads[quad_ctr]
@@ -310,6 +326,10 @@ if args.q:
 
         if key_ctr == 1:
             sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
+
+        axes_factor = 1.0/len_q6
+        unscaled_min, unscaled_max = sp.get_ylim()
+        sp2.set_ylim(axes_factor*unscaled_min,axes_factor*unscaled_max)
 
 
 plt.show()
