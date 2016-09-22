@@ -1,11 +1,10 @@
-#!/usr/bin/python2
-
 # Written by Philipp Dijkstal, philipp.dijkstal@cern.ch
 
 import os
 import sys
 import cPickle
 import argparse
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,12 +20,14 @@ args = arg.parse_args()
 # config
 sey_list = np.arange(1.1,1.46,0.05)
 coast_strs = ['1.0', '0.5']
-dict_keys = [['5219','1.8'], ['5219','0.92'], ['5222','2.3'], ['5223','3.0']]
-scenarios_labels = [ '1.1e11 6.5TeV', '1.1e11 450GeV', '0.9e11 6.5TeV', '0.7e11 6.5TeV']
+scenarios_labels = ['1.1e11 6.5TeV', '1.1e11 450GeV', '0.9e11 6.5TeV', '0.7e11 6.5TeV']
 
-arcs = ['S45', 'S23', 'S12', 'S81', 'S78', 'S56', 'S34', 'S67']
-quads = ['Q05L1', 'Q05R1', 'Q05L5','Q05R5']
-model = 'Imp+SR'
+re_arc = re.compile('^S\d\d$')
+re_quad = re.compile('^Q06[LR][1258]$')
+
+model_key = 'Imp+SR'
+imp_key = 'Imp'
+sr_key = 'SR'
 device_list = ['ArcDipReal', 'ArcQuadReal', 'Drift']
 device_labels = ['Dipole' , 'Quadrupole', 'Drift']
 
@@ -48,6 +49,17 @@ plt.rcParams['xtick.labelsize'] = ticksize
 with open('./heatload_arcs.pkl','r') as pickle_file:
     heatloads_dict = cPickle.load(pickle_file)
 
+dict_keys = heatloads_dict.keys()
+arc_quad_model_keys=heatloads_dict[dict_keys[0]].keys()
+
+arcs = []
+quads = []
+for key in arc_quad_model_keys:
+    if re_arc.match(key):
+        arcs.append(key)
+    elif re_quad.match(key):
+        quads.append(key)
+
 with open('./heatload_pyecloud.pkl','r') as pickle_file:
     heatloads_dict_pyecloud = cPickle.load(pickle_file)
 
@@ -59,36 +71,19 @@ length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 hl_measured = np.empty(shape=(len(dict_keys), len(arcs)))
 hl_measured_quads = np.empty(shape=(len(dict_keys), len(quads)))
 for key_ctr in xrange(len(dict_keys)):
-    filln = dict_keys[key_ctr][0]
-    time_of_interest = dict_keys[key_ctr][1]
-    model_hl_quad = heatloads_dict[filln][time_of_interest][model][0] / len_cell * len_q6
+    main_key = dict_keys[key_ctr]
     for arc_ctr in xrange(len(arcs)):
         arc = arcs[arc_ctr]
-        hl_measured[key_ctr,arc_ctr] = heatloads_dict[filln][time_of_interest][arc][0]
+        hl_measured[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][0] 
+    hl_measured[key_ctr,:] -= heatloads_dict[main_key][model_key][0]
+
     for quad_ctr in xrange(len(quads)):
         quad = quads[quad_ctr]
-        hl_measured_quads[key_ctr,quad_ctr] = heatloads_dict[filln][time_of_interest][quad][0] - model_hl_quad
+        hl_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0]
+    hl_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0]
 
 
 # Functions for global
-
-def get_heat_load(filln,time_of_interest,device,coast_str,sey_str):
-    try:
-        hl = heatloads_dict_pyecloud[filln][time_of_interest][device][coast_str][sey_str][0]
-    except KeyError:
-        print('Key error for fill %s, device %s sey %s.' % (filln+' '+time_of_interest, device, sey_str))
-        return -10
-    if heatloads_dict_pyecloud[filln][time_of_interest][device][coast_str][sey_str][1] == 1:
-        print('Correction for fill %s, device %s sey %s coast %s.' % (filln+' '+time_of_interest, device, sey_str,coast_str))
-        hl *= 2
-    elif heatloads_dict_pyecloud[filln][time_of_interest][device][coast_str][sey_str][1] == 1:
-        print('Error, too many entries!')
-        print(filln,time_of_interest,device,coast_str,sey_str)
-        sys.exit()
-
-    return hl
-
-
 
 def pyecloud_global(coast_str):
     if coast_str not in coast_strs:
@@ -97,24 +92,31 @@ def pyecloud_global(coast_str):
 
     hl_pyecloud = np.zeros(shape=(len(dict_keys),len(sey_list)))
 
-    for key_ctr in xrange(len(dict_keys)):
-        for sey_ctr in xrange(len(sey_list)):
-            filln = dict_keys[key_ctr][0]
-            time_of_interest = dict_keys[key_ctr][1]
+    for key_ctr in range(len(dict_keys)):
+        for sey_ctr in range(len(sey_list)):
+            main_key = dict_keys[key_ctr]
             sey_str = '%.2f' % sey_list[sey_ctr]
             for device in device_list:
-                hl = get_heat_load(filln,time_of_interest,device,coast_str,sey_str)
+                try:
+                    hl = heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][0]
+                except KeyError:
+                    print('Key error for fill %s, device %s sey %s.' % (main_key, device, sey_str))
+                    continue
+                if heatloads_dict_pyecloud[main_key][device][coast_str][sey_ctrstr][1] == 1:
+                    print('Correction for fill %s, device %s sey %s.' % (main_key, device, sey_str))
+                    hl *= 2
+
                 hl_pyecloud[key_ctr,sey_ctr] += hl*length[device]
 
     return hl_pyecloud
 
 def get_delta(hl_pyecloud):
     delta = np.zeros(shape=(len(arcs),len(sey_list),2))
-    for arc_ctr in xrange(len(arcs)):
-        for sey_ctr in xrange(len(sey_list)):
+    for arc_ctr in range(len(arcs)):
+        for sey_ctr in range(len(sey_list)):
             delta[arc_ctr,sey_ctr,0] = sey_list[sey_ctr]
 
-            for key_ctr in xrange(len(dict_keys)):
+            for key_ctr in range(len(dict_keys)):
                 measured = hl_measured[key_ctr,arc_ctr]
                 pyecloud = hl_pyecloud[key_ctr,sey_ctr]
                 delta[arc_ctr,sey_ctr,1] += ((hl_measured[key_ctr,arc_ctr]-hl_pyecloud[key_ctr,sey_ctr])/hl_measured[key_ctr,arc_ctr])**2
@@ -132,12 +134,19 @@ def pyecloud_device(device,coast_str):
 
     hl_pyecloud = np.zeros(shape=(len(dict_keys),len(sey_list)))
 
-    for key_ctr in xrange(len(dict_keys)):
-        for sey_ctr in xrange(len(sey_list)):
-            filln = dict_keys[key_ctr][0]
-            time_of_interest = dict_keys[key_ctr][1]
+    for key_ctr in range(len(dict_keys)):
+        for sey_ctr in range(len(sey_list)):
+            main_key = dict_keys[key_ctr]
             sey_str = '%.2f' % sey_list[sey_ctr]
-            hl = get_heat_load(filln,time_of_interest,device,coast_str,sey_str)
+            try:
+              hl = heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][0]
+            except KeyError:
+                print('Key error for fill %s, device %s sey %s.' % (main_key, device, sey_str))
+                continue
+            if heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][1] == 1:
+                print('Correction for fill %s, device %s sey %s.' % (main_key, device, sey_str))
+                hl *= 2
+
             hl_pyecloud[key_ctr,sey_ctr] = hl
 
     return hl_pyecloud
@@ -161,7 +170,7 @@ if args.g:
 
     coast_subplot = (plt.subplot(2,1,1), plt.subplot(2,1,2))
 
-    for ctr in xrange(len(coast_strs)):
+    for ctr in range(len(coast_strs)):
         coast_str = coast_strs[ctr]
         hl_pyecloud = pyecloud_global(coast_str)
         delta = get_delta(hl_pyecloud)
@@ -173,7 +182,7 @@ if args.g:
         subplot.set_ylabel('RMS deviation')
 
 
-        for arc_ctr in xrange(len(arcs)):
+        for arc_ctr in range(len(arcs)):
             label = arcs[arc_ctr]
             subplot.plot(delta[arc_ctr,:,0],delta[arc_ctr,:,1],label=label)
             subplot.legend()
@@ -205,8 +214,6 @@ if args.d:
             data = pyecloud_device(device,coast_str)
 
             for sce_ctr in xrange(len(dict_keys)):
-                filln_str = dict_keys[sce_ctr][0]
-                time_str = dict_keys[sce_ctr][1]
                 label = scenarios_labels[sce_ctr] + ' ' + coast_str + 'e9 coasting'
                 sp.plot(sey_list,data[sce_ctr,:],label=label)
 
