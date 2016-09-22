@@ -13,9 +13,9 @@ import numpy as np
 
 arg = argparse.ArgumentParser(description='')
 arg.add_argument('-g', help='Show global optimization, do not use this flag!', action='store_true')
-arg.add_argument('-d', help='Show heatloads for every device', action='store_true')
-arg.add_argument('-a', help='Show heatloads on arcs fill by fill', action='store_true')
-arg.add_argument('-q', help='Show heatloads on quads fill by fill', action='store_true')
+arg.add_argument('-d', help='Show heat loads for every device', action='store_true')
+arg.add_argument('-a', help='Show heat loads on arcs fill by fill, do not use this flag!', action='store_true')
+arg.add_argument('-q', help='Show heat loads on quads fill by fill', action='store_true')
 
 args = arg.parse_args()
 
@@ -26,6 +26,8 @@ scenarios_labels = ['1.1e11 6.5TeV', '1.1e11 450GeV', '0.9e11 6.5TeV', '0.7e11 6
 
 re_arc = re.compile('^S\d\d$')
 re_quad = re.compile('^Q06[LR][1258]$')
+re_quad_15 = re.compile('^Q06[LR][15]$')
+re_quad_28 = re.compile('^Q06[LR][28]$')
 
 model_key = 'Imp+SR'
 imp_key = 'Imp'
@@ -39,7 +41,8 @@ len_dip = 14.3
 len_quad = 3.1
 dip_per_halfcell = 3.
 len_cell = 53.45
-len_q6 = 8.
+len_q6_28 = 8.567
+len_q6_15 = 4.8
 
 ticksize = 14
 plt.rcParams['axes.grid'] = True
@@ -92,9 +95,16 @@ for key_ctr in xrange(len(dict_keys)):
 
     for quad_ctr in xrange(len(quads)):
         quad = quads[quad_ctr]
-        hl_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0]
-        quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][1]
-    hl_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0]
+        # Correct for length
+        if re_quad_15.match(quad):
+            length_quad = len_q6_15
+        elif re_quad_28.match(quad):
+            length_quad = len_q6_28
+        else:
+            raise ValueError('Illegal Quad')
+        hl_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0] / length_quad
+        quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][1] / length_quad
+    hl_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0] / len_cell
 
 
 # Simulation data
@@ -185,7 +195,7 @@ one_list = np.ones(shape=sey_list.shape)
 
 if args.g:
     fig = plt.figure()
-    title_str = 'Comparison of measured to pyecloud heatloads, %i scenarios' % len(dict_keys)
+    title_str = 'Comparison of measured to pyecloud heat loads, %i scenarios' % len(dict_keys)
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str, fontsize=16)
 
@@ -213,7 +223,7 @@ if args.g:
 
 if args.d:
     fig = plt.figure()
-    title_str = 'Heatloads for different devices and scenarios, per m and scaled'
+    title_str = 'Heat loads for different devices and scenarios, per m and scaled'
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=22)
 
@@ -225,9 +235,9 @@ if args.d:
         sp.grid('on')
         if dev_ctr == len(device_list)-1:
             sp.set_xlabel('SEY Parameter',fontsize=18)
-        sp.set_ylabel('Heatload per m [W]',fontsize=18)
+        sp.set_ylabel('Heat load per m [W]',fontsize=18)
         sp2 = sp.twinx()
-        sp2.set_ylabel('Heatload per half cell [W]',fontsize=18)
+        sp2.set_ylabel('Heat load per half cell [W]',fontsize=18)
         sp2.grid('off')
 
         for coast_ctr in xrange(len(coast_strs)):
@@ -251,7 +261,7 @@ if args.d:
 
 if args.a:
     fig = plt.figure()
-    title_str = 'Fill by Fill half cell heatloads'
+    title_str = 'Fill by Fill half cell heat loads'
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=24)
     plt.subplots_adjust(right=0.8, wspace=0.20)
@@ -290,13 +300,12 @@ if args.a:
 
 if args.q:
     fig = plt.figure()
-    title_str = 'Fill by Fill Q6IR5 heatloads - 8m Quadrupoles'
+    title_str = 'Fill by Fill Q6IR5 heat loads - 8m Quadrupoles'
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=20)
     plt.subplots_adjust(right=0.8, wspace=0.20)
 
-    # Correct for QP length
-    data = pyecloud_quad()*len_q6
+    data = pyecloud_quad()
 
     for key_ctr in xrange(len(dict_keys)):
         if key_ctr == 0:
@@ -305,11 +314,7 @@ if args.q:
             sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
         sp.grid('on')
         sp.set_xlabel('SEY Parameter', fontsize=18)
-        sp.set_ylabel('Totel heat load [W]', fontsize=18)
-
-        sp2 = sp.twinx()
-        sp2.set_ylabel('Heat load per m [W]', fontsize=18)
-        sp2.grid('off')
+        sp.set_ylabel('Heat load per m [W]', fontsize=18)
 
         uncertainty = np.mean(quad_uncertainty[key_ctr,:])
         uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
@@ -326,10 +331,6 @@ if args.q:
 
         if key_ctr == 1:
             sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
-
-        axes_factor = 1.0/len_q6
-        unscaled_min, unscaled_max = sp.get_ylim()
-        sp2.set_ylim(axes_factor*unscaled_min,axes_factor*unscaled_max)
 
 
 plt.show()
