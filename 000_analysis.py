@@ -204,11 +204,11 @@ def interp_device_single(sey, key_ctr, device):
     data = (pyecloud_device(device,'0.5') + pyecloud_device(device,'1.0'))/2
     return np.interp(sey,sey_list,data[key_ctr,:])
 
-def qp_sey(dip_sey,key_ctr,arc_ctr):
+def qp_sey(dip_sey,arc_ctr):
     measured = hl_measured[key_ctr,arc_ctr]
     dipolar = interp_device_single(dip_sey, key_ctr, 'ArcDipReal')*length['ArcDipReal']
     print(dipolar,measured)
-    f_tobe_zero = lambda quad_sey: measured.T - dipolar - interp_device_single(quad_sey[0], key_ctr, 'ArcQuadReal')*length['ArcQuadReal']
+    f_tobe_zero = lambda quad_sey: measured - dipolar - interp_device_single(quad_sey[0], key_ctr, 'ArcQuadReal')*length['ArcQuadReal']
     return opt.newton_krylov(f_tobe_zero,[dip_sey-0.01],verbose=True)
 
 
