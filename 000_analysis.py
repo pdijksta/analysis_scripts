@@ -7,6 +7,7 @@ import re
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.optimize as opt
 
 
 # Arguments
@@ -22,6 +23,7 @@ args = arg.parse_args()
 
 # Config
 
+# The following two lists have to be in the right order
 dict_keys = ['5219 1.8', '5219 0.92', '5222 2.3', '5223 3.0']
 scenarios_labels = ['1.1e11 6.5TeV', '1.1e11 450GeV', '0.9e11 6.5TeV', '0.7e11 6.5TeV']
 
@@ -184,9 +186,38 @@ def pyecloud_quad():
 
     return hl_pyecloud
 
+# Interpolate data
+def interp_device_data(sey_min,sey_max,step,device):
+    data = (pyecloud_device(device,'0.5') + pyecloud_device(device,'1.0'))/2
+    out_sey = np.arange(sey_min,sey_max+0.1*step,step)
+    (size_dict, size_sey) = data.shape
+
+    out_shape = (size_dict,len(out_sey))
+    out_data = np.empty(shape=out_shape)
+
+    for col in xrange(size_dict):
+        out_data[col,:] = np.interp(out_sey,sey_list,data[col,:])
+    
+    return out_data
+
+def interp_device_single(sey, key_ctr, device):
+    data = (pyecloud_device(device,'0.5') + pyecloud_device(device,'1.0'))/2
+    return np.interp(sey,sey_list,data[key_ctr,:])
+
+def qp_sey(dip_sey,key_ctr,arc_ctr):
+    measured = hl_measured[key_ctr,arc_ctr]
+    dipolar = interp_device_single(dip_sey, key_ctr, 'ArcDipReal')*length['ArcDipReal']
+    print(dipolar,measured)
+    f_tobe_zero = lambda quad_sey: measured.T - dipolar - interp_device_single(quad_sey[0], key_ctr, 'ArcQuadReal')*length['ArcQuadReal']
+    return opt.newton_krylov(f_tobe_zero,[dip_sey-0.01],verbose=True)
+
+
+# Test
+print(qp_sey(1.37,0,0))
+#print(interp_device_single(1.36,0,'ArcQuadReal'))
+
 
 # Plots
-
 one_list = np.ones(shape=sey_list.shape)
 
 # Global optimization
@@ -282,7 +313,7 @@ if args.a:
 
         for coast_ctr in xrange(len(coast_strs)):
             coast_str = coast_strs[coast_ctr]
-            label = scenarios_labels[key_ctr] + ' ' + coast_str + 'e9 coasting'
+            label = coast_str + 'e9 coasting beam'
             data = datas[coast_str]
             sp.plot(sey_list, data[key_ctr,:], label=label)
 
