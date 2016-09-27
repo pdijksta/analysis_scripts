@@ -12,7 +12,6 @@ import scipy.optimize as opt
 from scipy.optimize.nonlin import NoConvergence
 
 
-
 # Arguments
 
 arg = argparse.ArgumentParser(description='')
@@ -20,7 +19,7 @@ arg.add_argument('-g', help='Show global optimization, do not use this flag!', a
 arg.add_argument('-d', help='Show heat loads for every device', action='store_true')
 arg.add_argument('-a', help='Show heat loads on arcs fill by fill, do not use this flag!', action='store_true')
 arg.add_argument('-q', help='Show heat loads on quads fill by fill', action='store_true')
-arg.add_argument('-d', help='Execute testing', action='store_true')
+arg.add_argument('-o', help='Dual Optimization', action='store_true')
 args = arg.parse_args()
 
 
@@ -128,6 +127,7 @@ def pyecloud_global(coast_str):
             main_key = dict_keys[key_ctr]
             sey_str = '%.2f' % sey_list[sey_ctr]
             for device in device_list:
+                hl = 0
                 try:
                     hl = heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][0]
                 except KeyError:
@@ -184,32 +184,19 @@ def pyecloud_device(device, coast_str):
 # Function for quad only
 def pyecloud_quad():
     hl_pyecloud = np.zeros(shape=(len(dict_keys),len(sey_list),len(coast_strs)))
-    for coast_ctr in xrange(len(coast_strs)):
-        hl_pyecloud[:,:,coast_ctr] = pyecloud_device('ArcQuadReal',coast_strs[coast_ctr])
+    for coast_ctr, coast_str in enumerate(coast_strs):
+        hl_pyecloud[:,:,coast_ctr] = pyecloud_device('ArcQuadReal',coast_str)
 
     return hl_pyecloud
 
 # Interpolate data for dual optim
-def interp_device_data(sey_min,sey_max,step,device):
-    data = (pyecloud_device(device,'0.5') + pyecloud_device(device,'1.0'))/2
-    out_sey = np.arange(sey_min,sey_max+0.1*step,step)
-    (size_dict, size_sey) = data.shape
-
-    out_shape = (size_dict,len(out_sey))
-    out_data = np.empty(shape=out_shape)
-
-    for key_ctr in xrange(size_dict):
-        out_data[key_ctr,:] = np.interp(out_sey,sey_list,data[key_ctr,:])
-    
-    return out_data
-
 def data_for_dual_optim():
-    dip_begin = 1.33
-    dip_end = 1.5
+    dip_begin = 1.15
+    dip_end = 1.49
     step = 0.01
     dip_sey_list = np.arange(dip_begin,dip_end+.1*step,step)
 
-    dip_data = interp_device_data(dip_begin,dip_end+0.1*step,step,'ArcDipReal')*length['ArcDipReal']
+    dip_data = (pyecloud_device('ArcDipReal','0.5') + pyecloud_device('ArcDipReal','1.0'))/2*length['ArcDipReal']
     quad_raw = pyecloud_quad()
     quad_data = np.mean(quad_raw,axis=2)*length['ArcQuadReal']
 
@@ -219,35 +206,41 @@ def data_for_dual_optim():
             measured = hl_measured[key_ctr,arc_ctr]
 
             for dip_ctr, dip_sey in enumerate(dip_sey_list):
-                dip_hl = dip_data[key_ctr,dip_ctr]
+                dip_hl = np.interp(dip_sey,sey_list,dip_data[key_ctr,:])
 
-                f_tobe_zero = lambda quad_sey: measured - dip_hl - np.interp(quad_sey[0],sey_list,quad_data[key_ctr,:])
+                f_tobe_zero = lambda quad_sey: (measured - dip_hl - np.interp(quad_sey[0], sey_list, quad_data[key_ctr,:]))**2
                 output[key_ctr,arc_ctr,dip_ctr,0] = dip_sey
                 if dip_hl + quad_data[key_ctr,0] > measured or dip_hl + quad_data[key_ctr,-1] < measured:
-                    print('continue')
+                    #print('continue for %.2f' % dip_sey)
                     continue
-
                 try:
-                    output[key_ctr,arc_ctr,dip_ctr,1] = opt.newton_krylov(f_tobe_zero,[dip_sey-0.1],verbose=True)
+                    output[key_ctr,arc_ctr,dip_ctr,1] = opt.newton_krylov(f_tobe_zero, [dip_sey-0.1], verbose=False)
                 except (ValueError, NoConvergence):
-                    print('error', dip_sey)
-                    continue
+                    #print('error', dip_sey)
+                    pass
                 else:
                     print(output[key_ctr,arc_ctr,dip_ctr,:])
-
     return output
 
 
 # Plots
-one_list = np.ones(shape=sey_list.shape)
+one_list = np.ones_like(sey_list)
 
 # Dual optimization
-if args.d:
+if args.o:
     data = data_for_dual_optim()
+    fig_ctr = 0
     for arc_ctr, arc in enumerate(arcs):
         if arc_ctr%4 == 0:
             fig = plt.figure()
+            fig_ctr += 1
+            title_str = 'Valid pairs of dip and quad SEY %i' % fig_ctr
+            plt.suptitle(title_str,fontsize=22)
+            fig.canvas.set_window_title(title_str)
+
         sp = plt.subplot(2,2,arc_ctr%4+1)
+
+        # pyecloud data, measured only for labels/title
         for key_ctr, key in enumerate(dict_keys[:3]):
             hl = hl_measured[key_ctr,arc_ctr]
             label = '%s %.1f W' % (scenarios_labels[key_ctr],hl)
@@ -260,6 +253,14 @@ if args.d:
                     ydata.append(yy)
 
             plt.plot(xdata, ydata, label=label)
+
+        # Add diagonal lines
+        ylim = sp.get_ylim()
+        xlim = sp.get_xlim()
+        diag_left = max(ylim[0], xlim[0])
+        diag_right = min(ylim[1],xlim[1])
+        sp.plot([diag_left, diag_right], [diag_left,diag_right], '--', color='black', label='diagonal')
+
         sp.set_title('Arc %s' % arc, fontsize=20)
         sp.set_xlabel('Dipole SEY', fontsize=18)
         sp.set_ylabel('Quad SEY', fontsize=18)
@@ -274,18 +275,16 @@ if args.g:
 
     coast_subplot = (plt.subplot(2,1,1), plt.subplot(2,1,2))
 
-    for ctr in xrange(len(coast_strs)):
-        coast_str = coast_strs[ctr]
+    for coast_ctr, coast_str in enumerate(coast_strs):
         delta = get_delta(pyecloud_global(coast_str))
-        subplot = coast_subplot[ctr]
+        subplot = coast_subplot[coast_ctr]
 
         subplot.set_ylim(0,5)
         subplot.set_title('Coasting Beam of %s' % coast_str)
         subplot.set_xlabel('SEY Parameter')
         subplot.set_ylabel('RMS deviation')
 
-        for arc_ctr in xrange(len(arcs)):
-            label = arcs[arc_ctr]
+        for arc_ctr, label in enumerate(arcs):
             subplot.plot(delta[arc_ctr,:,0], delta[arc_ctr,:,1], label=label)
             subplot.legend()
 
@@ -298,30 +297,29 @@ if args.d:
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=22)
 
-    for dev_ctr in xrange(len(device_list)):
+    for dev_ctr, device in enumerate(device_list):
         sp = plt.subplot(len(device_list),1,dev_ctr+1)
-        device = device_list[dev_ctr]
         title = device_labels[dev_ctr]
         sp.set_title(title,fontsize=20)
-        sp.grid('on')
         if dev_ctr == len(device_list)-1:
             sp.set_xlabel('SEY Parameter',fontsize=18)
         sp.set_ylabel('Heat load per m [W]',fontsize=18)
         sp2 = sp.twinx()
         sp2.set_ylabel('Heat load per half cell [W]',fontsize=18)
         sp2.grid('off')
+        if device == 'ArcDipReal':
+            sp2.plot(sey_list,np.min(hl_measured)*one_list,label='Min measured')
+            sp2.plot(sey_list,np.max(hl_measured)*one_list,label='Max measured')
+            sp2.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
 
-        for coast_ctr in xrange(len(coast_strs)):
-            coast_str = coast_strs[coast_ctr]
+        for coast_ctr, coast_str in enumerate(coast_strs):
             data = pyecloud_device(device,coast_str)
-
             for sce_ctr in xrange(len(dict_keys)):
                 label = scenarios_labels[sce_ctr] + ' ' + coast_str + 'e9 coasting'
                 sp.plot(sey_list,data[sce_ctr,:],label=label)
 
         if dev_ctr == 1:
             sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
-
         axes_factor = length[device]
         unscaled_min, unscaled_max =  sp.get_ylim()
         sp2.set_ylim(axes_factor*unscaled_min,axes_factor*unscaled_max)
@@ -331,7 +329,7 @@ if args.d:
 # Arcs
 if args.a:
     fig = plt.figure()
-    title_str = 'Fill by Fill half cell heat loads'
+    title_str = 'Half cell heat loads'
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=24)
     plt.subplots_adjust(right=0.8, wspace=0.20)
@@ -344,7 +342,6 @@ if args.a:
             sp = plt.subplot(2,2,key_ctr+1)
         else:
             sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
-        sp.grid('on')
         sp.set_xlabel('SEY Parameter',fontsize=18)
         sp.set_ylabel('Heat load [W]',fontsize=18)
 
@@ -380,7 +377,6 @@ if args.q:
             sp = plt.subplot(2,2,key_ctr+1)
         else:
             sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
-        sp.grid('on')
         sp.set_xlabel('SEY Parameter', fontsize=18)
         sp.set_ylabel('Heat load per m [W]', fontsize=18)
 
