@@ -7,7 +7,10 @@ import re
 
 import matplotlib.pyplot as plt
 import numpy as np
+import math 
 import scipy.optimize as opt
+from scipy.optimize.nonlin import NoConvergence
+
 
 
 # Arguments
@@ -17,7 +20,7 @@ arg.add_argument('-g', help='Show global optimization, do not use this flag!', a
 arg.add_argument('-d', help='Show heat loads for every device', action='store_true')
 arg.add_argument('-a', help='Show heat loads on arcs fill by fill, do not use this flag!', action='store_true')
 arg.add_argument('-q', help='Show heat loads on quads fill by fill', action='store_true')
-
+arg.add_argument('-d', help='Execute testing', action='store_true')
 args = arg.parse_args()
 
 
@@ -38,7 +41,7 @@ imp_key = 'Imp'
 device_list = ['ArcDipReal', 'ArcQuadReal', 'Drift']
 device_labels = ['Dipole', 'Quadrupole', 'Drift']
 coast_strs = ['1.0', '0.5']
-sey_list = np.arange(1.1,1.46,0.05)
+sey_list = np.arange(1.1,1.51,0.05)
 
 len_dip = 14.3
 len_quad = 3.1
@@ -82,14 +85,14 @@ with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
 
 hl_measured = np.empty(shape=(len(dict_keys),len(arcs)))
 hl_measured_quads = np.empty(shape=(len(dict_keys),len(quads)))
-arc_uncertainty = np.empty(shape=hl_measured.shape)
-quad_uncertainty = np.empty(shape=hl_measured_quads.shape)
+arc_uncertainty = np.empty_like(hl_measured)
+quad_uncertainty = np.empty_like(hl_measured_quads)
 
 for key_ctr in xrange(len(dict_keys)):
     main_key = dict_keys[key_ctr]
     for arc_ctr in xrange(len(arcs)):
         arc = arcs[arc_ctr]
-        hl_measured[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][0]
+        hl_measured[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][0] - heatloads_dict[main_key][arc][2]
         arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][1]
     hl_measured[key_ctr,:] -= heatloads_dict[main_key][model_key][0]
 
@@ -186,7 +189,7 @@ def pyecloud_quad():
 
     return hl_pyecloud
 
-# Interpolate data
+# Interpolate data for dual optim
 def interp_device_data(sey_min,sey_max,step,device):
     data = (pyecloud_device(device,'0.5') + pyecloud_device(device,'1.0'))/2
     out_sey = np.arange(sey_min,sey_max+0.1*step,step)
@@ -195,30 +198,72 @@ def interp_device_data(sey_min,sey_max,step,device):
     out_shape = (size_dict,len(out_sey))
     out_data = np.empty(shape=out_shape)
 
-    for col in xrange(size_dict):
-        out_data[col,:] = np.interp(out_sey,sey_list,data[col,:])
+    for key_ctr in xrange(size_dict):
+        out_data[key_ctr,:] = np.interp(out_sey,sey_list,data[key_ctr,:])
     
     return out_data
 
-def interp_device_single(sey, key_ctr, device):
-    data = (pyecloud_device(device,'0.5') + pyecloud_device(device,'1.0'))/2
-    return np.interp(sey,sey_list,data[key_ctr,:])
+def data_for_dual_optim():
+    dip_begin = 1.33
+    dip_end = 1.5
+    step = 0.01
+    dip_sey_list = np.arange(dip_begin,dip_end+.1*step,step)
 
-def qp_sey(dip_sey,arc_ctr):
-    measured = hl_measured[key_ctr,arc_ctr]
-    dipolar = interp_device_single(dip_sey, key_ctr, 'ArcDipReal')*length['ArcDipReal']
-    print(dipolar,measured)
-    f_tobe_zero = lambda quad_sey: measured - dipolar - interp_device_single(quad_sey[0], key_ctr, 'ArcQuadReal')*length['ArcQuadReal']
-    return opt.newton_krylov(f_tobe_zero,[dip_sey-0.01],verbose=True)
+    dip_data = interp_device_data(dip_begin,dip_end+0.1*step,step,'ArcDipReal')*length['ArcDipReal']
+    quad_raw = pyecloud_quad()
+    quad_data = np.mean(quad_raw,axis=2)*length['ArcQuadReal']
 
+    output = np.zeros(shape=(len(dict_keys),len(arcs),len(dip_sey_list),2))
+    for key_ctr in xrange(len(dict_keys)):
+        for arc_ctr in xrange(len(arcs)):
+            measured = hl_measured[key_ctr,arc_ctr]
 
-# Test
-print(qp_sey(1.37,0,0))
-#print(interp_device_single(1.36,0,'ArcQuadReal'))
+            for dip_ctr, dip_sey in enumerate(dip_sey_list):
+                dip_hl = dip_data[key_ctr,dip_ctr]
+
+                f_tobe_zero = lambda quad_sey: measured - dip_hl - np.interp(quad_sey[0],sey_list,quad_data[key_ctr,:])
+                output[key_ctr,arc_ctr,dip_ctr,0] = dip_sey
+                if dip_hl + quad_data[key_ctr,0] > measured or dip_hl + quad_data[key_ctr,-1] < measured:
+                    print('continue')
+                    continue
+
+                try:
+                    output[key_ctr,arc_ctr,dip_ctr,1] = opt.newton_krylov(f_tobe_zero,[dip_sey-0.1],verbose=True)
+                except (ValueError, NoConvergence):
+                    print('error', dip_sey)
+                    continue
+                else:
+                    print(output[key_ctr,arc_ctr,dip_ctr,:])
+
+    return output
 
 
 # Plots
 one_list = np.ones(shape=sey_list.shape)
+
+# Dual optimization
+if args.d:
+    data = data_for_dual_optim()
+    for arc_ctr, arc in enumerate(arcs):
+        if arc_ctr%4 == 0:
+            fig = plt.figure()
+        sp = plt.subplot(2,2,arc_ctr%4+1)
+        for key_ctr, key in enumerate(dict_keys[:3]):
+            hl = hl_measured[key_ctr,arc_ctr]
+            label = '%s %.1f W' % (scenarios_labels[key_ctr],hl)
+            possible_xdata = data[key_ctr,arc_ctr,:,0]
+            possible_ydata = data[key_ctr,arc_ctr,:,1]
+            xdata, ydata = [], []
+            for ctr, yy in enumerate(possible_ydata):
+                if yy != 0:
+                    xdata.append(possible_xdata[ctr])
+                    ydata.append(yy)
+
+            plt.plot(xdata, ydata, label=label)
+        sp.set_title('Arc %s' % arc, fontsize=20)
+        sp.set_xlabel('Dipole SEY', fontsize=18)
+        sp.set_ylabel('Quad SEY', fontsize=18)
+        sp.legend(loc='upper right')
 
 # Global optimization
 if args.g:
