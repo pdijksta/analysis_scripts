@@ -8,9 +8,6 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 import math 
-import scipy.optimize as opt
-from scipy.optimize.nonlin import NoConvergence
-
 
 # Arguments
 
@@ -207,19 +204,14 @@ def data_for_dual_optim():
 
             for dip_ctr, dip_sey in enumerate(dip_sey_list):
                 dip_hl = np.interp(dip_sey,sey_list,dip_data[key_ctr,:])
+                quad_hl_list = quad_data[key_ctr,:]
 
-                f_tobe_zero = lambda quad_sey: (measured - dip_hl - np.interp(quad_sey[0], sey_list, quad_data[key_ctr,:]))**2
                 output[key_ctr,arc_ctr,dip_ctr,0] = dip_sey
-                if dip_hl + quad_data[key_ctr,0] > measured or dip_hl + quad_data[key_ctr,-1] < measured:
+                if dip_hl + np.min(quad_hl_list) > measured or dip_hl + np.max(quad_hl_list) < measured:
                     #print('continue for %.2f' % dip_sey)
                     continue
-                try:
-                    output[key_ctr,arc_ctr,dip_ctr,1] = opt.newton_krylov(f_tobe_zero, [dip_sey-0.1], verbose=False)
-                except (ValueError, NoConvergence):
-                    #print('error', dip_sey)
-                    pass
-                else:
-                    print(output[key_ctr,arc_ctr,dip_ctr,:])
+                quad_hl = measured - dip_hl
+                output[key_ctr,arc_ctr,dip_ctr,1] = np.interp(quad_hl,quad_data[key_ctr,:],sey_list)
     return output
 
 
@@ -385,17 +377,14 @@ if args.q:
         sp.set_title(scenarios_labels[key_ctr]+'\n'+uncertainty_str, fontsize=20)
 
         # measured data
-        for quad_ctr in xrange(len(quads)):
-            label = quads[quad_ctr]
-
+        for quad_ctr, label in enumerate(quads):
             # Skip 15 quads as the data quality seems to be bad unfortunately
             if re_quad_15.match(label):
                 continue
             sp.plot(sey_list, hl_measured_quads[key_ctr,quad_ctr]*one_list, '--', label=label)
 
         # simulation data
-        for coast_ctr in xrange(len(coast_strs)):
-            coast_str = coast_strs[coast_ctr]
+        for coast_ctr, coast_str in enumerate(coast_strs):
             label = coast_str + 'e9 coasting'
             sp.plot(sey_list, data[key_ctr,:,coast_ctr], label=label)
 
