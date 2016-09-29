@@ -329,11 +329,9 @@ if args.a:
     datas['0.5'] = pyecloud_global('0.5')
     datas['1.0'] = pyecloud_global('1.0')
 
+    sp = None
     for key_ctr in xrange(len(dict_keys)):
-        if key_ctr == 0:
-            sp = plt.subplot(2,2,key_ctr+1)
-        else:
-            sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
+        sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
         sp.set_xlabel('SEY Parameter',fontsize=18)
         sp.set_ylabel('Heat load [W]',fontsize=18)
 
