@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math 
 
+from LHCMeasurementTools.LHC_Heatloads import magnet_length
+
 # Arguments
 
 arg = argparse.ArgumentParser(description='')
@@ -22,10 +24,23 @@ args = arg.parse_args()
 
 # Config
 
-# The following two lists have to be in the right order
+# Parameters of the analyzed study
 dict_keys = ['5219 1.8', '5219 0.92', '5222 2.3', '5223 3.0']
-scenarios_labels = ['1.1e11 6.5TeV', '1.1e11 450GeV', '0.9e11 6.5TeV', '0.7e11 6.5TeV']
+scenarios_labels_dict = {'5219 1.8': '1.1e11 6.5TeV', 
+        '5219 0.92': '1.1e11 450GeV', 
+        '5222 2.3': '0.9e11 6.5TeV',
+        '5223 3.0': '0.7e11 6.5TeV'}
 
+coast_strs = ['1.0', '0.5']
+
+sey_list = np.arange(1.1,1.51,0.05)
+
+device_list = ['ArcDipReal', 'ArcQuadReal', 'Drift']
+device_labels_dict = {'ArcDipReal': 'Dipole', 
+        'ArcQuadReal': 'Quadrupole',
+        'Drift': 'Drift'}
+
+# Names of devices
 re_arc = re.compile('^S\d\d$')
 re_quad = re.compile('^Q06[LR][1258]$')
 re_quad_15 = re.compile('^Q06[LR][15]$')
@@ -34,17 +49,13 @@ re_quad_28 = re.compile('^Q06[LR][28]$')
 model_key = 'Imp+SR'
 imp_key = 'Imp'
 #sr_key = 'SR' # not needed
-device_list = ['ArcDipReal', 'ArcQuadReal', 'Drift']
-device_labels = ['Dipole', 'Quadrupole', 'Drift']
-coast_strs = ['1.0', '0.5']
-sey_list = np.arange(1.1,1.51,0.05)
 
-len_dip = 14.3
-len_quad = 3.1
+len_dip = magnet_length['special_HC_D2'][0]
+len_quad = magnet_length['special_HC_Q1'][0]
 dip_per_halfcell = 3.
-len_cell = 53.45
-len_q6_28 = 8.567
-len_q6_15 = 4.8
+len_cell = magnet_length['AVG_ARC'][0]
+len_q6_28 = magnet_length['Q6s_IR2'][0]
+len_q6_15 = magnet_length['Q6s_IR1'][0]
 
 length = {}
 length['ArcQuadReal'] = len_quad
@@ -78,22 +89,18 @@ with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
 
 
 # Measured data
-
 hl_measured = np.empty(shape=(len(dict_keys),len(arcs)))
-hl_measured_quads = np.empty(shape=(len(dict_keys),len(quads)))
+hl_pm_measured_quads = np.empty(shape=(len(dict_keys),len(quads)))
 arc_uncertainty = np.empty_like(hl_measured)
-quad_uncertainty = np.empty_like(hl_measured_quads)
+quad_uncertainty = np.empty_like(hl_pm_measured_quads)
 
-for key_ctr in xrange(len(dict_keys)):
-    main_key = dict_keys[key_ctr]
-    for arc_ctr in xrange(len(arcs)):
-        arc = arcs[arc_ctr]
+for key_ctr, key in enumerate(dict_keys):
+    for arc_ctr,arc in enumerate(arcs):
         hl_measured[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][0] - heatloads_dict[main_key][arc][2]
         arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][1]
     hl_measured[key_ctr,:] -= heatloads_dict[main_key][model_key][0]
 
-    for quad_ctr in xrange(len(quads)):
-        quad = quads[quad_ctr]
+    for quad_ctr,quad in enumerate(quads):
         # Correct for length
         if re_quad_15.match(quad):
             length_quad = len_q6_15
@@ -103,41 +110,34 @@ for key_ctr in xrange(len(dict_keys)):
             raise ValueError('Illegal Quad %s') % quad
 
         # heat loads per m are needed here
-        hl_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0] / length_quad
+        hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0] / length_quad
         quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][1] / length_quad
 
-    hl_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0] / len_cell
+    hl_pm_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0] / len_cell
 
 
 # Simulation data
-
-# Functions for global
-def pyecloud_global(coast_str):
-    if coast_str not in coast_strs:
-        print('Wrong coasting beam in pyecloud_global')
-        sys.exit()
-
-    hl_pyecloud = np.zeros(shape=(len(dict_keys),len(sey_list)))
-
-    for key_ctr in xrange(len(dict_keys)):
-        for sey_ctr in xrange(len(sey_list)):
-            main_key = dict_keys[key_ctr]
-            sey_str = '%.2f' % sey_list[sey_ctr]
-            for device in device_list:
+# Sum over beam 1 and 2
+hl_pyecloud = np.zeros(shape=(len(dict_keys),len(device),len(coast_strs),len(sey_list)))
+for key_ctr, key in enumerate(dict_keys):
+    for device_ctr, device in enumerate(device_list):
+        for coast_ctr, coast_str in enumerate(coast_strs)
+            for sey_ctr, sey in enumerate(sey_list):
+                sey_str = '%.2f' % sey
                 hl = 0
                 try:
                     hl = heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][0]
                 except KeyError:
                     print('Key error for fill %s, device %s sey %s coast %s.' % (main_key, device, sey_str, coast_str))
                     continue
+                # If no sim data for one beam, double the heatload from the other beam
                 if heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][1] == 1:
                     print('Correction for fill %s, device %s sey %s coast %s.' % (main_key, device, sey_str, coast_str))
                     hl *= 2
 
-                hl_pyecloud[key_ctr,sey_ctr] += hl*length[device]
+                hl_pyecloud[key_ctr,device_ctr,coast_ctr,sey_ctr] += hl*length[device]
 
-    return hl_pyecloud
-
+# Function for global optimization, deprecated
 def get_delta(hl_pyecloud):
     delta = np.zeros(shape=(len(arcs),len(sey_list),2))
     for arc_ctr in xrange(len(arcs)):
@@ -156,10 +156,10 @@ def get_delta(hl_pyecloud):
 # Function for device
 def pyecloud_device(device, coast_str):
     if device not in device_list or coast_str not in coast_str:
-        print('Wrong device name in pyecloud_device!')
-        sys.exit()
+        raise ValueError('Wrong device name in pyecloud_device!')
 
     hl_pyecloud = np.zeros(shape=(len(dict_keys),len(sey_list)))
+
 
     for key_ctr in xrange(len(dict_keys)):
         for sey_ctr in xrange(len(sey_list)):
@@ -235,7 +235,7 @@ if args.o:
         # pyecloud data, measured only for labels/title
         for key_ctr, key in enumerate(dict_keys[:3]):
             hl = hl_measured[key_ctr,arc_ctr]
-            label = '%s %.1f W' % (scenarios_labels[key_ctr],hl)
+            label = '%s %.1f W' % (scenarios_labels_dict[key],hl)
             possible_xdata = data[key_ctr,arc_ctr,:,0]
             possible_ydata = data[key_ctr,arc_ctr,:,1]
             xdata, ydata = [], []
@@ -291,7 +291,7 @@ if args.d:
 
     for dev_ctr, device in enumerate(device_list):
         sp = plt.subplot(len(device_list),1,dev_ctr+1)
-        title = device_labels[dev_ctr]
+        title = device_labels_dict[device]
         sp.set_title(title,fontsize=20)
         if dev_ctr == len(device_list)-1:
             sp.set_xlabel('SEY Parameter',fontsize=18)
@@ -306,8 +306,8 @@ if args.d:
 
         for coast_ctr, coast_str in enumerate(coast_strs):
             data = pyecloud_device(device,coast_str)
-            for sce_ctr in xrange(len(dict_keys)):
-                label = scenarios_labels[sce_ctr] + ' ' + coast_str + 'e9 coasting'
+            for sce_ctr,sce in enumerate(dict_keys):
+                label = scenarios_labels_dict[sce_ctr] + ' ' + coast_str + 'e9 coasting'
                 sp.plot(sey_list,data[sce_ctr,:],label=label)
 
         if dev_ctr == 1:
@@ -330,14 +330,14 @@ if args.a:
     datas['1.0'] = pyecloud_global('1.0')
 
     sp = None
-    for key_ctr in xrange(len(dict_keys)):
+    for key_ctr,key in enumerate(dict_keys):
         sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
         sp.set_xlabel('SEY Parameter',fontsize=18)
         sp.set_ylabel('Heat load [W]',fontsize=18)
 
         uncertainty = np.mean(arc_uncertainty[key_ctr,:])
         uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
-        sp.set_title(scenarios_labels[key_ctr]+'\n'+uncertainty_str, fontsize=20)
+        sp.set_title(scenarios_labels_dict[key]+'\n'+uncertainty_str, fontsize=20)
 
         for arc_ctr in xrange(len(arcs)):
             label = arcs[arc_ctr]
@@ -362,7 +362,7 @@ if args.q:
 
     data = pyecloud_quad()
 
-    for key_ctr in xrange(len(dict_keys)):
+    for key_ctr,key in enumerate(dict_keys):
         if key_ctr == 0:
             sp = plt.subplot(2,2,key_ctr+1)
         else:
@@ -372,14 +372,14 @@ if args.q:
 
         uncertainty = np.mean(quad_uncertainty[key_ctr,:])
         uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
-        sp.set_title(scenarios_labels[key_ctr]+'\n'+uncertainty_str, fontsize=20)
+        sp.set_title(scenarios_labels_dict[key]+'\n'+uncertainty_str, fontsize=20)
 
         # measured data
         for quad_ctr, label in enumerate(quads):
             # Skip 15 quads as the data quality seems to be bad unfortunately
             if re_quad_15.match(label):
                 continue
-            sp.plot(sey_list, hl_measured_quads[key_ctr,quad_ctr]*one_list, '--', label=label)
+            sp.plot(sey_list, hl_pm_measured_quads[key_ctr,quad_ctr]*one_list, '--', label=label)
 
         # simulation data
         for coast_ctr, coast_str in enumerate(coast_strs):
