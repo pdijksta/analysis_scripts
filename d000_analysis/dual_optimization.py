@@ -1,28 +1,21 @@
 # Interpolate data for dual optim
 import numpy as np
 import matplotlib.pyplot as plt
+from pyecloud_device import pyecloud_device
+
 # Function for device
-def pyecloud_device(hl_pyeclou, device, coast_str):
-    if device not in device_list or coast_str not in coast_str:
-        raise ValueError('Wrong device name or coast string in pyecloud_device!')
+def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list):
+    
+    pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, device_list, coast_strs, hl_pyecloud)
 
-    dev_ctr = device_list.index(device)
-    coast_ctr = coast_strs.index(coast_str)
-
-    hl_device = hl_pyecloud[:,device_ctr,coast_ctr,:]
-
-    return hl_device
-
-
-def main():
-    dip_begin = 1.15
+    dip_begin = 1.31
     dip_end = 1.51
     step = 0.01
     dip_sey_list = np.arange(dip_begin,dip_end+.1*step,step)
 
-    dip_data = (pyecloud_device('ArcDipReal','0.5') + pyecloud_device('ArcDipReal','1.0'))/2*length['ArcDipReal']
-    quad_raw = pyecloud_quad()
-    quad_data = np.mean(quad_raw,axis=2)*length['ArcQuadReal']
+    dip_data = (pyecloud_device_easy('ArcDipReal', '0.5') + pyecloud_device_easy('ArcDipReal','1.0'))/2 * length['ArcDipReal']
+    quad_data = (pyecloud_device_easy('ArcQuadReal','0.5') + pyecloud_device_easy('ArcQuadReal','1.0'))/2 * length['ArcQuadReal']
+    print(dip_data.shape)
 
     data = np.zeros(shape=(len(dict_keys),len(arcs),len(dip_sey_list),2))
     for key_ctr in xrange(len(dict_keys)):
@@ -35,10 +28,11 @@ def main():
 
                 data[key_ctr,arc_ctr,dip_ctr,0] = dip_sey
                 if dip_hl + np.min(quad_hl_list) > measured or dip_hl + np.max(quad_hl_list) < measured:
-                    #print('continue for %.2f' % dip_sey)
+                    print('continue for %.2f' % dip_sey)
                     continue
                 quad_hl = measured - dip_hl
                 data[key_ctr,arc_ctr,dip_ctr,1] = np.interp(quad_hl,quad_data[key_ctr,:],sey_list)
+                print(arcs[arc_ctr],measured, dip_hl, quad_hl, dip_sey,data[key_ctr,arc_ctr,dip_ctr,1])
 
     fig_ctr = 0
     for arc_ctr, arc in enumerate(arcs):
