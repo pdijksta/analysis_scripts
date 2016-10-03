@@ -2,4 +2,7 @@
 screenshots/
 *.pkl
 *.swp
-
+all_data/
+beam_snapshots/
+config/
+d000_analysis/__init__.py
