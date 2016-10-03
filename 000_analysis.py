@@ -151,7 +151,7 @@ if args.o:
  # Global optimization
 if args.g:
     from d000_analysis.global_optimization import main
-    main(dict_keys,arcs,sey_list,coast_strs,hl_pm_measured,hl_pyecloud)
+    main(dict_keys,arcs,sey_list,coast_strs,hl_pm_measured,hl_pyecloud, length, devices)
 
 # All devices
 if args.d:
