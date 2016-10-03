@@ -96,9 +96,9 @@ quad_uncertainty = np.empty_like(hl_pm_measured_quads)
 
 for key_ctr, key in enumerate(dict_keys):
     for arc_ctr,arc in enumerate(arcs):
-        hl_measured[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][0] - heatloads_dict[main_key][arc][2]
-        arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[main_key][arc][1]
-    hl_measured[key_ctr,:] -= heatloads_dict[main_key][model_key][0]
+        hl_measured[key_ctr,arc_ctr] = heatloads_dict[key][arc][0] - heatloads_dict[key][arc][2]
+        arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[key][arc][1]
+    hl_measured[key_ctr,:] -= heatloads_dict[key][model_key][0]
 
     for quad_ctr,quad in enumerate(quads):
         # Correct for length
@@ -110,53 +110,37 @@ for key_ctr, key in enumerate(dict_keys):
             raise ValueError('Illegal Quad %s') % quad
 
         # heat loads per m are needed here
-        hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][0] / length_quad
-        quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[main_key][quad][1] / length_quad
+        hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[key][quad][0] / length_quad
+        quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / length_quad
 
-    hl_pm_measured_quads[key_ctr,:] -= heatloads_dict[main_key][imp_key][0] / len_cell
+    hl_pm_measured_quads[key_ctr,:] -= heatloads_dict[key][imp_key][0] / len_cell
 
 
 # Simulation data
 # Sum over beam 1 and 2
-hl_pyecloud = np.zeros(shape=(len(dict_keys),len(device),len(coast_strs),len(sey_list)))
+hl_pyecloud = np.zeros(shape=(len(dict_keys),len(device_list),len(coast_strs),len(sey_list)))
 for key_ctr, key in enumerate(dict_keys):
     for device_ctr, device in enumerate(device_list):
-        for coast_ctr, coast_str in enumerate(coast_strs)
+        for coast_ctr, coast_str in enumerate(coast_strs):
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
                 hl = 0
                 try:
-                    hl = heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][0]
+                    hl = heatloads_dict_pyecloud[key][device][coast_str][sey_str][0]
                 except KeyError:
                     print('Key error for fill %s, device %s sey %s coast %s.' % (main_key, device, sey_str, coast_str))
                     continue
                 # If no sim data for one beam, double the heatload from the other beam
-                if heatloads_dict_pyecloud[main_key][device][coast_str][sey_str][1] == 1:
-                    print('Correction for fill %s, device %s sey %s coast %s.' % (main_key, device, sey_str, coast_str))
+                if heatloads_dict_pyecloud[key][device][coast_str][sey_str][1] == 1:
+                    print('Correction for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
                     hl *= 2
 
                 hl_pyecloud[key_ctr,device_ctr,coast_ctr,sey_ctr] += hl*length[device]
 
-# Function for global optimization, deprecated
-def get_delta(hl_pyecloud):
-    delta = np.zeros(shape=(len(arcs),len(sey_list),2))
-    for arc_ctr in xrange(len(arcs)):
-        for sey_ctr in xrange(len(sey_list)):
-            delta[arc_ctr,sey_ctr,0] = sey_list[sey_ctr]
-
-            for key_ctr in xrange(len(dict_keys)):
-                measured = hl_measured[key_ctr,arc_ctr]
-                pyecloud = hl_pyecloud[key_ctr,sey_ctr]
-                delta[arc_ctr,sey_ctr,1] += ((measured-pyecloud)/measured)**2
-
-            delta[arc_ctr,sey_ctr,1] = np.sqrt(delta[arc_ctr,sey_ctr,1])
-
-    return delta
-
 # Function for device
 def pyecloud_device(device, coast_str):
     if device not in device_list or coast_str not in coast_str:
-        raise ValueError('Wrong device name in pyecloud_device!')
+        raise ValueError('Wrong device name or coast string in pyecloud_device!')
 
     hl_pyecloud = np.zeros(shape=(len(dict_keys),len(sey_list)))
 
@@ -186,101 +170,19 @@ def pyecloud_quad():
 
     return hl_pyecloud
 
-# Interpolate data for dual optim
-def data_for_dual_optim():
-    dip_begin = 1.15
-    dip_end = 1.49
-    step = 0.01
-    dip_sey_list = np.arange(dip_begin,dip_end+.1*step,step)
-
-    dip_data = (pyecloud_device('ArcDipReal','0.5') + pyecloud_device('ArcDipReal','1.0'))/2*length['ArcDipReal']
-    quad_raw = pyecloud_quad()
-    quad_data = np.mean(quad_raw,axis=2)*length['ArcQuadReal']
-
-    output = np.zeros(shape=(len(dict_keys),len(arcs),len(dip_sey_list),2))
-    for key_ctr in xrange(len(dict_keys)):
-        for arc_ctr in xrange(len(arcs)):
-            measured = hl_measured[key_ctr,arc_ctr]
-
-            for dip_ctr, dip_sey in enumerate(dip_sey_list):
-                dip_hl = np.interp(dip_sey,sey_list,dip_data[key_ctr,:])
-                quad_hl_list = quad_data[key_ctr,:]
-
-                output[key_ctr,arc_ctr,dip_ctr,0] = dip_sey
-                if dip_hl + np.min(quad_hl_list) > measured or dip_hl + np.max(quad_hl_list) < measured:
-                    #print('continue for %.2f' % dip_sey)
-                    continue
-                quad_hl = measured - dip_hl
-                output[key_ctr,arc_ctr,dip_ctr,1] = np.interp(quad_hl,quad_data[key_ctr,:],sey_list)
-    return output
-
-
 # Plots
+plt.close('all')
 one_list = np.ones_like(sey_list)
 
 # Dual optimization
 if args.o:
-    data = data_for_dual_optim()
-    fig_ctr = 0
-    for arc_ctr, arc in enumerate(arcs):
-        if arc_ctr%4 == 0:
-            fig = plt.figure()
-            fig_ctr += 1
-            title_str = 'Valid pairs of dip and quad SEY %i' % fig_ctr
-            plt.suptitle(title_str,fontsize=22)
-            fig.canvas.set_window_title(title_str)
+    pass
 
-        sp = plt.subplot(2,2,arc_ctr%4+1)
-
-        # pyecloud data, measured only for labels/title
-        for key_ctr, key in enumerate(dict_keys[:3]):
-            hl = hl_measured[key_ctr,arc_ctr]
-            label = '%s %.1f W' % (scenarios_labels_dict[key],hl)
-            possible_xdata = data[key_ctr,arc_ctr,:,0]
-            possible_ydata = data[key_ctr,arc_ctr,:,1]
-            xdata, ydata = [], []
-            for ctr, yy in enumerate(possible_ydata):
-                if yy != 0:
-                    xdata.append(possible_xdata[ctr])
-                    ydata.append(yy)
-
-            plt.plot(xdata, ydata, label=label)
-
-        # Add diagonal lines
-        ylim = sp.get_ylim()
-        xlim = sp.get_xlim()
-        diag_left = max(ylim[0], xlim[0])
-        diag_right = min(ylim[1],xlim[1])
-        sp.plot([diag_left, diag_right], [diag_left,diag_right], '--', color='black', label='diagonal')
-
-        sp.set_title('Arc %s' % arc, fontsize=20)
-        sp.set_xlabel('Dipole SEY', fontsize=18)
-        sp.set_ylabel('Quad SEY', fontsize=18)
-        sp.legend(loc='upper right')
-
-# Global optimization
+ # Global optimization
 if args.g:
-    fig = plt.figure()
-    title_str = 'Comparison of measured to pyecloud heat loads, %i scenarios' % len(dict_keys)
-    fig.canvas.set_window_title(title_str)
-    plt.suptitle(title_str, fontsize=16)
+    from d000_analysis.global_optimization import main
+    main(dict_keys,arcs,sey_list,coast_strs,hl_measured,hl_pyecloud)
 
-    coast_subplot = (plt.subplot(2,1,1), plt.subplot(2,1,2))
-
-    for coast_ctr, coast_str in enumerate(coast_strs):
-        delta = get_delta(pyecloud_global(coast_str))
-        subplot = coast_subplot[coast_ctr]
-
-        subplot.set_ylim(0,5)
-        subplot.set_title('Coasting Beam of %s' % coast_str)
-        subplot.set_xlabel('SEY Parameter')
-        subplot.set_ylabel('RMS deviation')
-
-        for arc_ctr, label in enumerate(arcs):
-            subplot.plot(delta[arc_ctr,:,0], delta[arc_ctr,:,1], label=label)
-            subplot.legend()
-
-    plt.subplots_adjust(right=0.7, wspace=0.30)
 
 # All devices
 if args.d:
