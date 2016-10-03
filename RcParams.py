@@ -3,6 +3,7 @@ def init_pyplot():
     ticksize = 'large'
     plt.rcParams['axes.grid'] = True
     plt.rcParams['legend.loc'] = 'upper left'
+    plt.rcParams[u'legend.fontsize'] = 18
     plt.rcParams['ytick.labelsize'] = ticksize
     plt.rcParams['xtick.labelsize'] = ticksize
     plt.rcParams['axes.prop_cycle'] = plt.cycler(u'color', [u'b', u'g', u'r', u'c', u'm', u'y', u'k',u'orange'])
