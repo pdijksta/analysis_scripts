@@ -10,7 +10,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
     fig = plt.figure()
     title_str = 'Fill by Fill heat loads - Quadrupoles'
     fig.canvas.set_window_title(title_str)
-    plt.suptitle(title_str,fontsize=20)
+    plt.suptitle(title_str,fontsize=24)
 
     for key_ctr,key in enumerate(dict_keys):
         if key_ctr == 0:
@@ -22,7 +22,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
 
         uncertainty = np.mean(quad_uncertainty[key_ctr,:])
         uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
-        sp.set_title(scenarios_labels_dict[key]+'\n'+uncertainty_str, fontsize=20)
+        sp.set_title(scenarios_labels_dict[key]+' - '+uncertainty_str, fontsize=20)
 
         # measured data
         for quad_ctr, label in enumerate(quads):
@@ -37,5 +37,33 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
             data = pyecloud_device_easy('ArcQuadReal',coast_str)
             sp.plot(sey_list, data[key_ctr,:], label=label)
 
-        if key_ctr == 1:
-            sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
+        if key_ctr == 3:
+            sp.legend(bbox_to_anchor=(1.1, 1))
+
+
+# Plot all scenarios for same quad
+
+
+    plt_ctr = 0
+    title_str = 'Heat loads for quadrupoles'
+    for quad_ctr, quad in enumerate(quads):
+        if plt_ctr % 4 == 0:
+            plt.figure()
+            plt.suptitle(title_str + ' %i' % (plt_ctr+1))
+            fig.canvas.set_window_title(title_str)
+        elif plt_ctr % 4 == 3:
+            sp.legend(bbox_to_anchor=(1.1, 1))
+        plt_ctr += 1
+        sp = plt.subplot(2,2,plt_ctr%4+1)
+        sp.set_xlabel('SEY Parameter')
+        sp.set_ylabel('Heat load per m [W]')
+        sp.set_title(quad)
+
+        sp.plot(sey_list,hl_pm_measured_quads[key_ctr,quad_ctr]*one_list, '--')
+
+        for coast_ctr, coast_str in enumerate(coast_strs):
+            data = pyecloud_device_easy('ArcQuadReal',coast_str)
+            for key_ctr, key in enumerate(dict_keys):
+                label = scenarios_labels_dict[key] + ' ' + coast_str + 'e9'
+                sp.plot(sey_list, data[key_ctr,:], label=label)
+
