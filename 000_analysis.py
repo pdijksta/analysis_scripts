@@ -35,7 +35,7 @@ coast_strs = ['1.0', '0.5']
 
 sey_list = np.arange(1.1,1.51,0.05)
 
-device_list = ['ArcDipReal', 'ArcQuadReal', 'Drift']
+devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
 device_labels_dict = {'ArcDipReal': 'Dipole', 
         'ArcQuadReal': 'Quadrupole',
         'Drift': 'Drift'}
@@ -122,9 +122,9 @@ hl_pm_measured = hl_measured / len_cell
 
 # Simulation data
 # Sum over beam 1 and 2
-hl_pyecloud = np.zeros(shape=(len(dict_keys),len(device_list),len(coast_strs),len(sey_list)))
+hl_pyecloud = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),len(sey_list)))
 for key_ctr, key in enumerate(dict_keys):
-    for device_ctr, device in enumerate(device_list):
+    for device_ctr, device in enumerate(devices):
         for coast_ctr, coast_str in enumerate(coast_strs):
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
@@ -148,7 +148,7 @@ one_list = np.ones_like(sey_list)
 # Dual optimization
 if args.o:
     from d000_analysis.dual_optimization import main
-    main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list)
+    main(hl_pyecloud, devices, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list)
 
  # Global optimization
 if args.g:
@@ -159,43 +159,14 @@ if args.g:
 # All devices
 if args.d:
     from d000_analysis.devices import main
-    main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_measured, hl_pyecloud, scenarios_labels_dict, length)
+    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_measured, hl_pyecloud, scenarios_labels_dict, length)
 
 
-    # Arcs
+# Arcs
 if args.a:
-    fig = plt.figure()
-    title_str = 'Half cell heat loads'
-    fig.canvas.set_window_title(title_str)
-    plt.suptitle(title_str,fontsize=24)
-    plt.subplots_adjust(right=0.8, wspace=0.20)
-    datas = {}
-    datas['0.5'] = pyecloud_global('0.5')
-    datas['1.0'] = pyecloud_global('1.0')
-
-    sp = None
-    for key_ctr,key in enumerate(dict_keys):
-        sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
-        sp.set_xlabel('SEY Parameter',fontsize=18)
-        sp.set_ylabel('Heat load [W]',fontsize=18)
-
-        uncertainty = np.mean(arc_uncertainty[key_ctr,:])
-        uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
-        sp.set_title(scenarios_labels_dict[key]+'\n'+uncertainty_str, fontsize=20)
-
-        for arc_ctr in xrange(len(arcs)):
-            label = arcs[arc_ctr]
-            sp.plot(sey_list, hl_pm_measured[key_ctr,arc_ctr]*one_list, '--', label=label)
-
-        for coast_ctr in xrange(len(coast_strs)):
-            coast_str = coast_strs[coast_ctr]
-            label = coast_str + 'e9 coasting beam'
-            data = datas[coast_str]
-            sp.plot(sey_list, data[key_ctr,:], label=label)
-
-        if key_ctr == 1:
-            sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
-
+    from d000_analysis.arcs import main
+    main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dict, arcs, sey_list, coast_strs, dict_keys, devices)
+    
 # Quadrupoles
 if args.q:
     fig = plt.figure()
