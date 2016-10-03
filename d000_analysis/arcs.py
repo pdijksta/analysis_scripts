@@ -23,7 +23,7 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
 
         uncertainty = np.mean(arc_uncertainty[key_ctr,:])
         uncertainty_str = 'Mean heat load uncertainty: %.1f W' % uncertainty
-        sp.set_title(scenarios_labels_dict[key]+'\n'+uncertainty_str, fontsize=20)
+        sp.set_title(scenarios_labels_dict[key]+' - '+uncertainty_str, fontsize=20)
 
         for arc_ctr in xrange(len(arcs)):
             label = arcs[arc_ctr]
