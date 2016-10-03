@@ -3,15 +3,14 @@ import matplotlib.pyplot as plt
 from pyecloud_device import pyecloud_device
 
 def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty, quads, sey_list, scenarios_labels_dict):
-    one_list = np.ones_like(sey_list)
 
+    one_list = np.ones_like(sey_list)
     pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, devices, coast_strs, hl_pyecloud)
 
     fig = plt.figure()
     title_str = 'Fill by Fill heat loads - Quadrupoles'
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=20)
-    plt.subplots_adjust(right=0.8, wspace=0.20)
 
     for key_ctr,key in enumerate(dict_keys):
         if key_ctr == 0:
@@ -27,7 +26,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
 
         # measured data
         for quad_ctr, label in enumerate(quads):
-            # Skip 15 quads as the data quality seems to be bad unfortunately
+            # Maybe skip 15 quads as the data quality seems to be bad unfortunately
             #if re_quad_15.match(label):
             #    continue
             sp.plot(sey_list, hl_pm_measured_quads[key_ctr,quad_ctr]*one_list, '--', label=label)

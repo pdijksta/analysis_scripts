@@ -10,6 +10,8 @@ import numpy as np
 import math 
 
 from LHCMeasurementTools.LHC_Heatloads import magnet_length
+from RcParams import init_pyplot
+init_pyplot()
 
 # Arguments
 
@@ -19,7 +21,11 @@ arg.add_argument('-d', help='Show heat loads for every device', action='store_tr
 arg.add_argument('-a', help='Show heat loads on arcs fill by fill, do not use this flag!', action='store_true')
 arg.add_argument('-q', help='Show heat loads on quads fill by fill', action='store_true')
 arg.add_argument('-o', help='Dual Optimization', action='store_true')
+arg.add_argument('-f', help='Full Output', action='store_true')
 args = arg.parse_args()
+
+if args.f:
+    args.g = args.d = args.a = args.q = args.o = True
 
 
 # Config
@@ -62,13 +68,6 @@ length['ArcQuadReal'] = len_quad
 length['ArcDipReal'] = dip_per_halfcell * len_dip
 length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 length['HalfCell'] = len_cell
-
-ticksize = 14
-plt.rcParams['axes.grid'] = True
-plt.rcParams['legend.loc'] = 'upper left'
-plt.rcParams['ytick.labelsize'] = ticksize
-plt.rcParams['xtick.labelsize'] = ticksize
-
 
 # Import nested dictionaries
 

@@ -8,7 +8,6 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
     title_str = 'Half cell heat loads'
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str,fontsize=24)
-    plt.subplots_adjust(right=0.8, wspace=0.20)
 
     data = np.zeros((len(dict_keys),len(coast_strs),len(sey_list)))
     for key_ctr in xrange(len(dict_keys)):
@@ -37,5 +36,3 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
 
         if key_ctr == 1:
             sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
-
-
