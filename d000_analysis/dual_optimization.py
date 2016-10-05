@@ -8,7 +8,7 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
     
     pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, device_list, coast_strs, hl_pyecloud)
 
-    dip_begin = 1.31
+    dip_begin = 1.10
     dip_end = 1.51
     step = 0.005
     dip_sey_list = np.arange(dip_begin,dip_end+.1*step,step)

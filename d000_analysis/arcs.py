@@ -27,7 +27,8 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
         sp = plt.subplot(2,2,(arc_ctr%4)+1, sharex = sp)
         sp.set_xlabel('SEY Parameter',fontsize=18)
         sp.set_ylabel('Heat load [W]',fontsize=18)
-        sp.set_title('Mean heat load uncertainty: %.1f W' % np.mean(arc_uncertainty[:,arc_ctr]))
+        mean_uncertainty = np.mean(arc_uncertainty[:,arc_ctr])
+        sp.set_title('Arc %s - Mean heat load uncertainty: %.1f W' % (arc, mean_uncertainty))
         
         for key_ctr, key in enumerate(dict_keys):
             color = colors.next()[u'color']

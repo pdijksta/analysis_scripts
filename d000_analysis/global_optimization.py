@@ -21,10 +21,8 @@ def main(dict_keys,arcs,sey_list,coast_strs,hl_measured,hl_pyecloud, length, dev
     fig.canvas.set_window_title(title_str)
     plt.suptitle(title_str, fontsize=20)
 
-    coast_subplot = (plt.subplot(2,1,1), plt.subplot(2,1,2))
-
     for coast_ctr, coast_str in enumerate(coast_strs):
-        subplot = coast_subplot[coast_ctr]
+        subplot = plt.subplot(len(coast_strs),1,coast_ctr+1)
 
         subplot.set_ylim(0,5)
         subplot.set_title('Coasting Beam of %s' % coast_str)

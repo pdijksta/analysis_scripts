@@ -25,9 +25,6 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_
         sp2 = sp.twinx()
         sp2.set_ylabel('Heat load per half cell [W]',fontsize=18)
         sp2.grid('off')
-        if dev_ctr == 0:
-            sp2.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
-
         
         colors = itertools.cycle(plt.rcParams['axes.prop_cycle'])
         for sce_ctr,sce in enumerate(dict_keys):
