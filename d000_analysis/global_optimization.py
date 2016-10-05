@@ -33,4 +33,4 @@ def main(dict_keys,arcs,sey_list,coast_strs,hl_measured,hl_pyecloud, length, dev
 
         for arc_ctr, label in enumerate(arcs):
             subplot.plot(sey_list, delta[arc_ctr,:,coast_ctr], label=label)
-            subplot.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
+            subplot.legend(bbox_to_anchor=(1.1, 1))

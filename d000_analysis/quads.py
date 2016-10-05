@@ -7,16 +7,17 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
     one_list = np.ones_like(sey_list)
     pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, devices, coast_strs, hl_pyecloud)
 
-    fig = plt.figure()
-    title_str = 'Fill by Fill heat loads - Quadrupoles'
-    fig.canvas.set_window_title(title_str)
-    plt.suptitle(title_str,fontsize=24)
-
+    fig_ctr = 0
+    sp = None
     for key_ctr,key in enumerate(dict_keys):
-        if key_ctr == 0:
-            sp = plt.subplot(2,2,key_ctr+1)
-        else:
-            sp = plt.subplot(2,2,key_ctr+1,sharex=sp)
+        if key_ctr % 4 == 0:
+            fig = plt.figure()
+            fig_ctr += 1
+            title_str = 'Fill by Fill heat loads - Quadrupoles %i' % fig_ctr
+            fig.canvas.set_window_title(title_str)
+            plt.suptitle(title_str,fontsize=24)
+
+        sp = plt.subplot(2,2,(key_ctr%4)+1,sharex=sp)
         sp.set_xlabel('SEY Parameter', fontsize=18)
         sp.set_ylabel('Heat load per m [W]', fontsize=18)
 
@@ -40,16 +41,15 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
         if key_ctr == 3:
             sp.legend(bbox_to_anchor=(1.1, 1))
 
-
 # Plot all scenarios for same quad
 
-
     plt_ctr = 0
-    title_str = 'Heat loads for quadrupoles'
+    fig_ctr = 0
     for quad_ctr, quad in enumerate(quads):
         if plt_ctr % 4 == 0:
             plt.figure()
-            plt.suptitle(title_str + ' %i' % (plt_ctr+1))
+            fig_ctr += 1
+            plt.suptitle('Heat loads for quadrupoles' + ' %i' % fig_ctr)
             fig.canvas.set_window_title(title_str)
         elif plt_ctr % 4 == 3:
             sp.legend(bbox_to_anchor=(1.1, 1))
@@ -59,11 +59,10 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
         sp.set_ylabel('Heat load per m [W]')
         sp.set_title(quad)
 
-        sp.plot(sey_list,hl_pm_measured_quads[key_ctr,quad_ctr]*one_list, '--')
-
-        for coast_ctr, coast_str in enumerate(coast_strs):
-            data = pyecloud_device_easy('ArcQuadReal',coast_str)
-            for key_ctr, key in enumerate(dict_keys):
+        for key_ctr, key in enumerate(dict_keys):
+            label = scenarios_labels_dict[key]
+            sp.plot(sey_list, hl_pm_measured_quads[key_ctr,quad_ctr]*one_list, '--', label=label)
+            for coast_ctr, coast_str in enumerate(coast_strs):
+                data = pyecloud_device_easy('ArcQuadReal',coast_str)
                 label = scenarios_labels_dict[key] + ' ' + coast_str + 'e9'
                 sp.plot(sey_list, data[key_ctr,:], label=label)
-

@@ -30,18 +30,29 @@ if args.f:
 
 # Config
 
-# Parameters of the analyzed study
-dict_keys = ['5219 1.8', '5219 0.92', '5222 2.3', '5223 3.0']
-scenarios_labels_dict = {'5219 1.8': '1.1e11 6.5TeV', 
+# Parameters of the study
+dict_keys = ['5219 1.8', '5222 2.3', '5223 3.0', '5219 0.92', '5222 1.63', '5223 2.3']
+print('Scenarios:\n' + str(dict_keys))
+scenarios_labels_dict = {\
+        '5219 1.8': '1.1e11 6.5TeV', 
         '5219 0.92': '1.1e11 450GeV', 
         '5222 2.3': '0.9e11 6.5TeV',
-        '5223 3.0': '0.7e11 6.5TeV'}
+        '5223 3.0': '0.7e11 6.5TeV',
+        '5222 1.63': '0.9e11 450GeV',
+        '5223 2.3': ' 0.7e11 450GeV' 
+        }
 
 coast_strs = ['1.0', '0.5']
+coast_linestyle_dict = {\
+        '1.0': '-',
+        '0.5': ':',
+        '0.0': '--'
+        }
 
 sey_list = np.arange(1.1,1.51,0.05)
 
-devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
+#devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
+devices = ['ArcDipReal', 'ArcQuadReal']
 device_labels_dict = {'ArcDipReal': 'Dipole', 
         'ArcQuadReal': 'Quadrupole',
         'Drift': 'Drift'}
@@ -156,12 +167,12 @@ if args.g:
 # All devices
 if args.d:
     from d000_analysis.devices import main
-    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_measured, hl_pyecloud, scenarios_labels_dict, length)
+    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_measured, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict)
 
 # Arcs
 if args.a:
     from d000_analysis.arcs import main
-    main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dict, arcs, sey_list, coast_strs, dict_keys, devices)
+    main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dict, arcs, sey_list, coast_strs, dict_keys, devices,coast_linestyle_dict)
     
 # Quadrupoles
 if args.q:
