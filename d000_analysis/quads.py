@@ -4,7 +4,8 @@ import itertools
 
 from pyecloud_device import pyecloud_device
 
-def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty, quads, sey_list, scenarios_labels_dict, coast_linestyle_dict):
+def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty,
+        quads, sey_list, scenarios_labels_dict, coast_linestyle_dict):
 
     one_list = np.ones_like(sey_list)
     pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, devices, coast_strs, hl_pyecloud)
