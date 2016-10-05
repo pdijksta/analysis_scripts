@@ -177,6 +177,6 @@ if args.a:
 # Quadrupoles
 if args.q:
     from d000_analysis.quads import main
-    main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty, quads, sey_list, scenarios_labels_dict)
+    main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty, quads, sey_list, scenarios_labels_dict, coast_linestyle_dict)
     
 plt.show()
