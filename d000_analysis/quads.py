@@ -24,17 +24,38 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
         sp.set_title(quad)
 
         colors = itertools.cycle(plt.rcParams['axes.prop_cycle'])
+        
+        inters_min = 1000
+        inters_max = -1
 
         for key_ctr, key in enumerate(dict_keys):
             color = colors.next()[u'color']
-            sp.plot(sey_list, hl_pm_measured_quads[key_ctr,quad_ctr]*one_list, '--', color=color)
+            measured = hl_pm_measured_quads[key_ctr,quad_ctr]
+            sp.plot(sey_list, measured*one_list, '--', color=color)
+
             for coast_ctr, coast_str in enumerate(coast_strs):
+
                 data = pyecloud_device_easy('ArcQuadReal',coast_str)
-                if coast_ctr == 1:
+
+                # get intersection point
+                sey_int = np.interp(measured,data[key_ctr,:],sey_list)
+                inters_min = min(inters_min, sey_int)
+                inters_max = max(inters_max, sey_int)
+
+                if coast_ctr == 0:
                     label = scenarios_labels_dict[key]
                 else:
                     label = None
                 ls = coast_linestyle_dict[coast_str]
                 sp.plot(sey_list, data[key_ctr,:], label=label, color=color, ls=ls)
+
+        # Make nicer plots
+        y_lim = sp.get_ylim()
+        x_lim = sp.get_xlim()
+        plot_min = max(x_lim[0]+0.005, inters_min)
+        plot_max = min(x_lim[1]-0.005, inters_max)
+        plt.axvline(plot_min, y_lim[0], y_lim[1], ls='-', color='0.3', label='min/max SEY')
+        plt.axvline(plot_max, y_lim[0], y_lim[1], ls='-', color='0.3')
+
         if quad_ctr % 4 == 3:
             sp.legend(bbox_to_anchor=(1.1, 1))
