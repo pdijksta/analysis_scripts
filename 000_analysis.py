@@ -42,11 +42,11 @@ scenarios_labels_dict = {\
         '5223 2.3': ' 0.7e11 450GeV' 
         }
 
-coast_strs = ['1.0', '0.5']
+coast_strs = ['1.0', '0.5', '0.0']
 coast_linestyle_dict = {\
         '1.0': '-',
-        '0.5': ':',
-        '0.0': '--'
+        '0.5': '-.',
+        '0.0': ':'
         }
 
 sey_list = np.arange(1.1,1.51,0.05)
@@ -97,7 +97,6 @@ for key in arc_quad_model_keys:
 
 with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
     heatloads_dict_pyecloud = cPickle.load(pickle_file)
-
 
 # Measured data
 hl_measured = np.empty(shape=(len(dict_keys),len(arcs)))
