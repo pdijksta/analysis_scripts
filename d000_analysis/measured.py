@@ -23,7 +23,7 @@ class Handle_devs:
         self.get_intensity = get_intensity
         self.dict_keys = dict_keys
 
-        self.hl, self.hl_total, self.uncertainty, self.model = self._create_data_arrays()
+        self._create_data_arrays()
 
         self._plot_devs()
 
@@ -49,7 +49,7 @@ class Handle_devs:
                 hl_total[dev_ctr,energy_ctr,intensity_ctr] = hl[dev_ctr,energy_ctr,intensity_ctr] + model[energy_ctr,intensity_ctr]
                 uncertainty[dev_ctr,energy_ctr,intensity_ctr] = self.dev_pm_uncertainty[key_ctr,dev_ctr]
 
-        return hl, hl_total, uncertainty, model
+        self.hl, self.hl_total, self.uncertainty, self.model = hl, hl_total, uncertainty, model
 
     def _plot_devs(self):
 
@@ -79,7 +79,7 @@ class Handle_devs:
 
                 sp.plot(intensity_list_float,this_hl, marker='x', label=energy, color=color)
                 sp.fill_between(intensity_list_float,lower, higher, color=color, alpha=0.5)
-                plt.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label='Model', color=color, ls='--')
+                sp.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label='Model', color=color, ls='--')
 
             if sp_nr == 2:
                 sp.legend(bbox_to_anchor=(1.1, 1))
