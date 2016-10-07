@@ -16,14 +16,14 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_
     plt.suptitle(title_str,fontsize=22)
 
     for dev_ctr, device in enumerate(device_list):
-        sp = plt.subplot(len(device_list),1,dev_ctr+1)
+        sp = plt.subplot(2,2,dev_ctr+1)
         title = device_labels_dict[device]
         sp.set_title(title,fontsize=20)
-        if dev_ctr == len(device_list)-1:
-            sp.set_xlabel('SEY Parameter',fontsize=18)
-        sp.set_ylabel('Heat load per m [W]',fontsize=18)
+
+        sp.set_xlabel('SEY Parameter')
+        sp.set_ylabel('Heat load per m [W]')
         sp2 = sp.twinx()
-        sp2.set_ylabel('Heat load per half cell [W]',fontsize=18)
+        sp2.set_ylabel('Heat load per half cell [W]')
         sp2.grid('off')
         
         colors = itertools.cycle(plt.rcParams['axes.prop_cycle'])
@@ -32,7 +32,7 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_
             for coast_ctr, coast_str in enumerate(coast_strs):
                 data = pyecloud_device_easy(device,coast_str)
                 if coast_ctr == 0:
-                    label = scenarios_labels_dict[sce] #+ #' ' + coast_str + 'e9 coasting'
+                    label = scenarios_labels_dict[sce]
                 else:
                     label = None
                 ls = coast_linestyle_dict[coast_str]
@@ -40,6 +40,7 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_
 
         if dev_ctr == 1:
             sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
+
         axes_factor = length[device]
         unscaled_min, unscaled_max =  sp.get_ylim()
         sp2.set_ylim(axes_factor*unscaled_min,axes_factor*unscaled_max)

@@ -65,7 +65,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
         plt.axvline(plot_min, y_lim[0], y_lim[1], ls='-', color='0.3', label='min/max SEY')
         plt.axvline(plot_max, y_lim[0], y_lim[1], ls='-', color='0.3')
 
-        if quad_ctr % 4 == 3:
+        if quad_ctr % 4 == 1:
             sp.legend(bbox_to_anchor=(1.1, 1))
 
     # Plot Min/Max Intersections
