@@ -212,5 +212,6 @@ if args.q:
 # Measured
 if args.m:
     from d000_analysis.measured import main
+    main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict, get_intensity, get_energy)
 
 plt.show()
