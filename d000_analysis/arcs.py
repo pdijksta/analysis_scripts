@@ -37,7 +37,7 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
                 ls = coast_linestyle_dict[coast_str]
                 label = None
                 if ls == '-':
-                    label = key
+                    label = scenarios_labels_dict[key]
                 sp.plot(sey_list, data[key_ctr, coast_ctr,:], ls=ls, color=color, label=label)
 
         if arc_ctr % 4 == 1:
