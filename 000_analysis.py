@@ -7,7 +7,7 @@ import re
 
 import matplotlib.pyplot as plt
 import numpy as np
-import math 
+import math
 
 from LHCMeasurementTools.LHC_Heatloads import magnet_length
 from RcParams import init_pyplot
@@ -16,17 +16,17 @@ init_pyplot()
 # Arguments
 
 arg = argparse.ArgumentParser(description='')
-arg.add_argument('-g', help='Show global optimization, do not use this flag!', action='store_true')
-arg.add_argument('-d', help='Show heat loads for every device', action='store_true')
-arg.add_argument('-a', help='Show heat loads on arcs fill by fill, do not use this flag!', action='store_true')
-arg.add_argument('-q', help='Show heat loads on quads fill by fill', action='store_true')
-arg.add_argument('-o', help='Dual Optimization', action='store_true')
-arg.add_argument('-f', help='Full Output', action='store_true')
+arg.add_argument('-d', help='Simulated HL for every device.', action='store_true')
+arg.add_argument('-q', help='Measured and simulated HL for all Quads.', action='store_true')
+arg.add_argument('-m', help='Measured data with subtracted Imp/SR heat load.', action='store_true')
+arg.add_argument('-o', help='Dual Optimization. Assumes Drift SEY equals Arc SEY', action='store_true')
+arg.add_argument('-g', help='Global optimization for arcs, assumes equal SEY for all devices.', action='store_true')
+arg.add_argument('-a', help='Measured and simulated HL for all Arcs, assumes equal SEY for all devices.', action='store_true')
+arg.add_argument('-f', help='Full Output. Set all other options to true.', action='store_true')
 args = arg.parse_args()
 
 if args.f:
-    args.g = args.d = args.a = args.q = args.o = True
-
+    args.g = args.d = args.a = args.q = args.o = args.m = True
 
 # Config
 
@@ -35,22 +35,13 @@ dict_keys = ['5219 1.8', '5222 2.3', '5223 3.0', '5219 0.92', '5222 1.63', '5223
 print('Scenarios:\n' + str(dict_keys))
 
 scenarios_labels_dict = {\
-        '5219 1.8':  '1.1e11 6.5TeV', 
-        '5219 0.92': '1.1e11 450GeV', 
+        '5219 1.8':  '1.1e11 6.5TeV',
+        '5219 0.92': '1.1e11 450GeV',
         '5222 2.3':  '0.9e11 6.5TeV',
         '5223 3.0':  '0.7e11 6.5TeV',
         '5222 1.63': '0.9e11 450GeV',
-        '5223 2.3':  ' 0.7e11 450GeV' 
+        '5223 2.3':  '0.7e11 450GeV'
         }
-scenarios_energies_dict = {\
-        '5219 1.8':  '6.5TeV', 
-        '5219 0.92': '450GeV', 
-        '5222 2.3':  '6.5TeV',
-        '5223 3.0':  '6.5TeV',
-        '5222 1.63': '450GeV',
-        '5223 2.3':  '450GeV' 
-        }
-
 
 coast_strs = ['1.0', '0.5', '0.0']
 coast_linestyle_dict = {\
@@ -62,9 +53,11 @@ coast_linestyle_dict = {\
 sey_list = np.arange(1.1,1.51,0.05)
 
 devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
-device_labels_dict = {'ArcDipReal': 'Dipole', 
+device_labels_dict = {\
+        'ArcDipReal': 'Dipole',
         'ArcQuadReal': 'Quadrupole',
-        'Drift': 'Drift'}
+        'Drift': 'Drift'
+        }
 
 # Names of devices, regular expressions
 re_arc = re.compile('^S\d\d$')
@@ -89,6 +82,24 @@ length['ArcQuadReal'] = len_quad
 length['ArcDipReal'] = dip_per_halfcell * len_dip
 length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 length['HalfCell'] = len_cell
+
+# Obtain info from scenarios_labels_dict
+re_filln = re.compile('^(\d{4})')
+def get_filln(key):
+    info = re.search(re_filln,key)
+    return info.group(1)
+
+re_energy = re.compile('([\d\.]{3}[GT]eV)')
+def get_energy(key):
+    label = scenarios_labels_dict[key]
+    info = re.search(re_energy,label)
+    return info.group(1)
+
+re_intensity = re.compile('^(\d\.\de\d\d)')
+def get_intensity(key):
+    label = scenarios_labels_dict[key]
+    info = re.search(re_intensity,label)
+    return info.group(1)
 
 # Import nested dictionaries
 with open('./heatload_arcs.pkl', 'r') as pickle_file:
@@ -145,19 +156,18 @@ for key_ctr, key in enumerate(dict_keys):
 # Heat load per m
 hl_pm_measured = hl_measured / len_cell
 
-
 # Simulation data
 # Sum over beam 1 and 2
 hl_pyecloud = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),len(sey_list)))
 for key_ctr, key in enumerate(dict_keys):
     for device_ctr, device in enumerate(devices):
+        if device == 'Drift' and get_energy(key) == '450GeV':
+            hl_pyecloud[key_ctr,device_ctr,:,:] = 0
+            continue
         for coast_ctr, coast_str in enumerate(coast_strs):
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
                 hl = 0
-                if device == 'Drift' and scenarios_energies_dict[key] == '450GeV':
-                    hl_pyecloud[key_ctr,device_ctr,coast_ctr,sey_ctr] = 0
-                    continue
                 try:
                     hl = heatloads_dict_pyecloud[key][device][coast_str][sey_str][0]
                 except KeyError:
@@ -187,16 +197,20 @@ if args.g:
 # All devices
 if args.d:
     from d000_analysis.devices import main
-    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_measured, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict)
+    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict)
 
 # Arcs
 if args.a:
     from d000_analysis.arcs import main
     main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dict, arcs, sey_list, coast_strs, dict_keys, devices,coast_linestyle_dict)
-    
+
 # Quadrupoles
 if args.q:
     from d000_analysis.quads import main
     main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty, quads, sey_list, scenarios_labels_dict, coast_linestyle_dict)
-    
+
+# Measured
+if args.m:
+    from d000_analysis.measured import main
+
 plt.show()
