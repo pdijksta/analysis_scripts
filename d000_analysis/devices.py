@@ -4,7 +4,7 @@ import itertools
 
 from pyecloud_device import pyecloud_device
 
-def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_measured, hl_pyecloud, 
+def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pyecloud,
         scenarios_labels_dict, length, coast_linestyle_dict):
 
     one_list = np.ones_like(sey_list)
@@ -25,20 +25,22 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pm_
         sp2 = sp.twinx()
         sp2.set_ylabel('Heat load per half cell [W]')
         sp2.grid('off')
-        
+
         colors = itertools.cycle(plt.rcParams['axes.prop_cycle'])
         for sce_ctr,sce in enumerate(dict_keys):
             color = colors.next()[u'color']
             for coast_ctr, coast_str in enumerate(coast_strs):
                 data = pyecloud_device_easy(device,coast_str)
-                if coast_ctr == 0:
+                if coast_ctr == 0 and dev_ctr ==1:
                     label = scenarios_labels_dict[sce]
+                elif dev_ctr == 2 and sce_ctr == 0:
+                    label = coast_str + ' e9 coasting'
                 else:
                     label = None
                 ls = coast_linestyle_dict[coast_str]
                 sp.plot(sey_list,data[sce_ctr,:],label=label,color=color, ls=ls)
 
-        if dev_ctr == 1:
+        if dev_ctr == 1 or dev_ctr == 2:
             sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
 
         axes_factor = length[device]
