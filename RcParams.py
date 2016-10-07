@@ -1,20 +1,31 @@
 import matplotlib.pyplot as plt
+
 def init_pyplot():
-    ticksize = 'large'
+
+    labelsize = 18
+    ticksize = labelsize-4
+
+    plt.rcParams['lines.linewidth'] = 2.0
+    plt.rcParams['figure.titlesize'] = u'large'
+    plt.rcParams['font.size'] = 15.0
+
     plt.rcParams['axes.grid'] = True
-    plt.rcParams['legend.loc'] = 'upper left'
-    plt.rcParams[u'legend.fontsize'] = 18
+
+    plt.rcParams['figure.facecolor'] = u'w'
+    plt.rcParams['figure.subplot.left'] = 0.125
+    plt.rcParams['figure.subplot.right'] =  0.8
+
     plt.rcParams['ytick.labelsize'] = ticksize
     plt.rcParams['xtick.labelsize'] = ticksize
+
+    plt.rcParams['legend.loc'] = 'upper left'
+    plt.rcParams['legend.fontsize'] = labelsize
+
+    plt.rcParams['axes.linewidth'] = 2.0
+    plt.rcParams['axes.labelsize'] = labelsize
+    plt.rcParams['axes.titlesize'] = u'large'
+
     plt.rcParams['axes.prop_cycle'] = plt.cycler(u'color', [u'b', u'g', u'r', u'c', u'm', u'y', u'k',u'orange'])
-    plt.rcParams[u'figure.facecolor'] = u'w'
-    plt.rcParams[u'figure.subplot.left'] = 0.125
-    plt.rcParams[u'figure.subplot.right'] =  0.8
-    plt.rcParams[u'axes.linewidth'] = 2.0
-    plt.rcParams[u'lines.linewidth'] = 2.0
-    plt.rcParams[u'figure.titlesize'] = u'large'
-    plt.rcParams[u'axes.titlesize'] = u'large'
-    plt.rcParams[u'font.size'] = 15.0
 
 
 # plt.rcParams
