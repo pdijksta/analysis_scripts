@@ -105,11 +105,10 @@ def get_intensity(key):
 with open('./heatload_arcs.pkl', 'r') as pickle_file:
     heatloads_dict = cPickle.load(pickle_file)
 
-arc_quad_model_keys = heatloads_dict[dict_keys[0]].keys()
-
+# Define arcs and quads
 arcs = []
 quads = []
-for key in arc_quad_model_keys:
+for key in heatloads_dict[dict_keys[0]].keys():
     if re_arc.match(key):
         arcs.append(key)
     elif re_quad.match(key):
@@ -126,12 +125,14 @@ hl_model_arcs = np.empty(shape=(len(dict_keys),))
 hl_model_quads = np.copy(hl_model_arcs)
 
 arc_uncertainty = np.empty_like(hl_measured)
-quad_uncertainty = np.empty_like(hl_pm_measured_quads)
+quad_pm_uncertainty = np.empty_like(hl_pm_measured_quads)
 
 for key_ctr, key in enumerate(dict_keys):
-    # Arcs
+    # Model
     hl_model_arcs[key_ctr] = heatloads_dict[key][model_key][0]
     hl_model_quads[key_ctr] = heatloads_dict[key][imp_key][0]
+
+    # Arcs
     for arc_ctr,arc in enumerate(arcs):
         hl_measured[key_ctr,arc_ctr] = heatloads_dict[key][arc][0] - heatloads_dict[key][arc][2]
         arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[key][arc][1]
@@ -149,12 +150,15 @@ for key_ctr, key in enumerate(dict_keys):
 
         # heat loads per m are needed here
         hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[key][quad][0] / length_quad
-        quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / length_quad
+        quad_pm_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / length_quad
 
     hl_pm_measured_quads[key_ctr,:] -= hl_model_quads[key_ctr] / len_cell
 
 # Heat load per m
 hl_pm_measured = hl_measured / len_cell
+hl_pm_model_arcs = hl_model_arcs / len_cell
+hl_pm_model_quads = hl_model_quads / len_cell
+arc_pm_uncertainty = arc_uncertainty / len_cell
 
 # Simulation data
 # Sum over beam 1 and 2
@@ -207,11 +211,12 @@ if args.a:
 # Quadrupoles
 if args.q:
     from d000_analysis.quads import main
-    main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_uncertainty, quads, sey_list, scenarios_labels_dict, coast_linestyle_dict)
+    main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad_pm_uncertainty, quads, sey_list, scenarios_labels_dict, coast_linestyle_dict)
 
 # Measured
 if args.m:
     from d000_analysis.measured import main
-    main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict, get_intensity, get_energy)
+    main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict,
+            get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty)
 
 plt.show()
