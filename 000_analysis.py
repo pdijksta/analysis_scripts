@@ -33,14 +33,24 @@ if args.f:
 # Parameters of the study
 dict_keys = ['5219 1.8', '5222 2.3', '5223 3.0', '5219 0.92', '5222 1.63', '5223 2.3']
 print('Scenarios:\n' + str(dict_keys))
+
 scenarios_labels_dict = {\
-        '5219 1.8': '1.1e11 6.5TeV', 
+        '5219 1.8':  '1.1e11 6.5TeV', 
         '5219 0.92': '1.1e11 450GeV', 
-        '5222 2.3': '0.9e11 6.5TeV',
-        '5223 3.0': '0.7e11 6.5TeV',
+        '5222 2.3':  '0.9e11 6.5TeV',
+        '5223 3.0':  '0.7e11 6.5TeV',
         '5222 1.63': '0.9e11 450GeV',
-        '5223 2.3': ' 0.7e11 450GeV' 
+        '5223 2.3':  ' 0.7e11 450GeV' 
         }
+scenarios_energies_dict = {\
+        '5219 1.8':  '6.5TeV', 
+        '5219 0.92': '450GeV', 
+        '5222 2.3':  '6.5TeV',
+        '5223 3.0':  '6.5TeV',
+        '5222 1.63': '450GeV',
+        '5223 2.3':  '450GeV' 
+        }
+
 
 coast_strs = ['1.0', '0.5', '0.0']
 coast_linestyle_dict = {\
@@ -51,13 +61,12 @@ coast_linestyle_dict = {\
 
 sey_list = np.arange(1.1,1.51,0.05)
 
-#devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
-devices = ['ArcDipReal', 'ArcQuadReal']
+devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
 device_labels_dict = {'ArcDipReal': 'Dipole', 
         'ArcQuadReal': 'Quadrupole',
         'Drift': 'Drift'}
 
-# Names of devices
+# Names of devices, regular expressions
 re_arc = re.compile('^S\d\d$')
 re_quad = re.compile('^Q06[LR][1258]$')
 re_quad_15 = re.compile('^Q06[LR][15]$')
@@ -67,6 +76,7 @@ model_key = 'Imp+SR'
 imp_key = 'Imp'
 #sr_key = 'SR' # not needed
 
+# Lengths from dictionary
 len_dip = magnet_length['special_HC_D2'][0]
 len_quad = magnet_length['special_HC_Q1'][0]
 dip_per_halfcell = 3.
@@ -81,7 +91,6 @@ length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 length['HalfCell'] = len_cell
 
 # Import nested dictionaries
-
 with open('./heatload_arcs.pkl', 'r') as pickle_file:
     heatloads_dict = cPickle.load(pickle_file)
 
@@ -101,15 +110,23 @@ with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
 # Measured data
 hl_measured = np.empty(shape=(len(dict_keys),len(arcs)))
 hl_pm_measured_quads = np.empty(shape=(len(dict_keys),len(quads)))
+
+hl_model_arcs = np.empty(shape=(len(dict_keys),))
+hl_model_quads = np.copy(hl_model_arcs)
+
 arc_uncertainty = np.empty_like(hl_measured)
 quad_uncertainty = np.empty_like(hl_pm_measured_quads)
 
 for key_ctr, key in enumerate(dict_keys):
+    # Arcs
+    hl_model_arcs[key_ctr] = heatloads_dict[key][model_key][0]
+    hl_model_quads[key_ctr] = heatloads_dict[key][imp_key][0]
     for arc_ctr,arc in enumerate(arcs):
         hl_measured[key_ctr,arc_ctr] = heatloads_dict[key][arc][0] - heatloads_dict[key][arc][2]
         arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[key][arc][1]
-    hl_measured[key_ctr,:] -= heatloads_dict[key][model_key][0]
+    hl_measured[key_ctr,:] -= hl_model_arcs[key_ctr]
 
+    # Quads
     for quad_ctr,quad in enumerate(quads):
         # Correct for length
         if re_quad_15.match(quad):
@@ -123,7 +140,8 @@ for key_ctr, key in enumerate(dict_keys):
         hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[key][quad][0] / length_quad
         quad_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / length_quad
 
-    hl_pm_measured_quads[key_ctr,:] -= heatloads_dict[key][imp_key][0] / len_cell
+    hl_pm_measured_quads[key_ctr,:] -= hl_model_quads[key_ctr] / len_cell
+
 # Heat load per m
 hl_pm_measured = hl_measured / len_cell
 
@@ -137,10 +155,13 @@ for key_ctr, key in enumerate(dict_keys):
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
                 hl = 0
+                if device == 'Drift' and scenarios_energies_dict[key] == '450GeV':
+                    hl_pyecloud[key_ctr,device_ctr,coast_ctr,sey_ctr] = 0
+                    continue
                 try:
                     hl = heatloads_dict_pyecloud[key][device][coast_str][sey_str][0]
                 except KeyError:
-                    print('Key error for fill %s, device %s sey %s coast %s.' % (main_key, device, sey_str, coast_str))
+                    print('Key error for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
                     continue
                 # If no sim data for one beam, double the heatload from the other beam
                 if heatloads_dict_pyecloud[key][device][coast_str][sey_str][1] == 1:
