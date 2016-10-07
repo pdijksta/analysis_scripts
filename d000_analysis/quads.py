@@ -25,8 +25,8 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
 
         colors = itertools.cycle(plt.rcParams['axes.prop_cycle'])
         
-        inters_min = 1000
-        inters_max = -1
+        inters_min = np.inf
+        inters_max = -np.inf
 
         for key_ctr, key in enumerate(dict_keys):
             color = colors.next()[u'color']
