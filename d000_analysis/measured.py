@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 
-# TODO: automate these 2 lists!
+# TODO: -automate these 2 lists!
+#       -change this script to a class
+
 intensity_list = ['0.7e11', '0.9e11', '1.1e11']
 intensity_list_float = [float(string) for string in intensity_list]
 energy_list = ['450GeV', '6.5TeV']
