@@ -14,7 +14,11 @@ init_pyplot()
 parser = argparse.ArgumentParser()
 parser.add_argument('-q', help='Quadrupole SEY', metavar='Quad SEY', type=float)
 parser.add_argument('-d', help='Drift SEY', metavar='Drift SEY', type=float)
+parser.add_argument('beam', help='B1 | B2', type=str, metavar='BEAM')
 args = parser.parse_args()
+
+if args.beam != 'B1' and args.beam != 'B2':
+    raise ValueError('Incorrect specification of beam!')
 
 assumed_quad_sey = args.q
 assumed_drift_sey = args.d
@@ -26,6 +30,7 @@ main_folder = './all_data'
 beam_snapshot_folder = './beam_snapshots'
 
 machine_name = 'LHC'
+devices = ['Drift', 'ArcDipReal', 'ArcQuadReal']
 device_name = 'ArcDipReal'
 beam_name = '6500GeV'
 
@@ -45,7 +50,7 @@ sim_ident_template = '%s_%s_%s_%s_sey%.2f_coast%s'
 
 #beam_snapshot = 'Fill5219_cut0.920h_450GeV_for_triplets_B1.mat'
 #beam_snapshot = 'Fill5219_cut0.920h_450GeV_for_triplets_B1.mat'
-beam_snapshot = 'Fill5219_cut1.800h_6500GeV_for_triplets_B1.mat'
+beam_snapshot = 'Fill5219_cut1.800h_6500GeV_for_triplets_%s.mat' % args.beam
 
 ob_snapshot = mlo.myloadmat_to_obj(beam_snapshot_folder+'/'+beam_snapshot)
 meas_loss_per_meter = ob_snapshot.bunch_power_loss/23./2./8./l_hc
@@ -83,6 +88,10 @@ drift_contribution_per_meter, drift_ob,t_bun = get_simulation_ob('Drift', assume
 
 plt.close('all')
 fig = plt.figure()
+title_str = 'Comparison of measured to simulated bunch by bunch power losses.'
+fig.canvas.set_window_title(title_str)
+#title_str += '\nAssumed Quad/Drift SEY: %.2f/%.2f' % (assumed_quad_sey,assumed_drift_sey)
+#plt.suptitle(title_str,fontsize=25)
 sp0 = plt.subplot(3,1,1)
 sp1 = plt.subplot(3,1,2, sharex=sp0)
 
@@ -123,14 +132,15 @@ for coast_ctr, coast_str in enumerate(coast_strs):
             print 'Got:', err
             hl.append(0.)
 
-sp0.semilogy(ob_snapshot.ppb_vect, color=colorbeam,label='Measured')
-for coast_str in coast_strs:
-    coast_arr = np.ones_like(ob_snapshot.ppb_vect)*1e9*float(coast_str)
-    label = coast_str + 'e9 coasting'
-    ls = coast_linestyle_dict[coast_str]
-    sp0.semilogy(coast_arr, color=colorbeam, label=label, ls=ls)
+## Maybe this was a silly idea. Keeping it as a comment for now
+#for coast_str in coast_strs:
+#    coast_arr = np.ones_like(ob_snapshot.ppb_vect)*1e9*float(coast_str)
+#    label = coast_str + 'e9 coasting'
+#    ls = coast_linestyle_dict[coast_str]
+#    sp0.semilogy(coast_arr, color=colorbeam, label=label, ls=ls)
+#sp0.legend(bbox_to_anchor=(1, 1.02), loc='upper left')
 
-sp0.legend(bbox_to_anchor=(1, 1.02), loc='upper left')
+sp0.plot(ob_snapshot.ppb_vect, color=colorbeam,label='Measured')
 
 
 #sp0.semilogy(ob_snapshot.ppb_vect)
@@ -144,11 +154,40 @@ sp2.plot(meas_loss_per_hc, '.-', color='k', label='Measured')
 sp2.set_ylabel('Power loss [W/hc]')
 sp2.set_xlabel('25 ns slot')
 
-sp1.legend(bbox_to_anchor=(1, 1.02),  loc='upper left', fontsize='medium')
-sp2.legend(bbox_to_anchor=(1, 1.02),  loc='upper left', fontsize='medium')
-plt.suptitle(beam_snapshot.split('.mat')[0]+'\nsey min rmserr %.2f'%sey_min_rmserr)
+sp1.legend(bbox_to_anchor=(1, 1.02),  loc='upper left')
+sp2.legend(bbox_to_anchor=(1, 1.02),  loc='upper left')
+#plt.suptitle(beam_snapshot.split('.mat')[0]+'\nsey min rmserr %.2f'%sey_min_rmserr)
 
-#fig100 = plt.figure(100)
-#plt.plot(sey_vect, np.array(hl)*53.)
+
+# Figure for devices only
+fig = plt.figure()
+title_str = 'Simulated bunch by bunch power losses for different devices.'
+fig.canvas.set_window_title(title_str)
+plt.suptitle(title_str,fontsize=25)
+
+sp = None
+for dev_ctr, device in enumerate(devices):
+    sp_ctr = dev_ctr +1
+    sp = plt.subplot(3,1,sp_ctr, sharex=sp)
+    sp.set_title(device)
+    ms.sciy()
+    for coast_ctr, coast_str in enumerate(coast_strs):
+       for sey_ctr, sey in enumerate(sey_vect):
+            try:
+                contribution_per_meter, ob, t_bun = get_simulation_ob(device, sey, coast_str)
+
+                color_curr = ms.colorprog(sey_ctr, N_sims)
+                if coast_ctr == 0:
+                    label = sey
+                else:
+                    label = None
+
+                sp.plot(t_bun[:-1]/25e-9, contribution_per_meter, '.-', color=color_curr, label=label, ls=coast_linestyle_dict[coast_str])
+
+            except IOError as err:
+                print 'Got:', err
+
+    if sp_ctr == 1:
+        sp.legend(bbox_to_anchor=(1, 1.02),  loc='upper left')
 
 plt.show()
