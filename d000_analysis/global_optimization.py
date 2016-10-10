@@ -19,10 +19,10 @@ def main(dict_keys,arcs,sey_list,coast_strs,hl_measured,hl_pyecloud, length, dev
     fig = plt.figure()
     title_str = 'Comparison of measured to pyecloud heat loads, %i scenarios' % len(dict_keys)
     fig.canvas.set_window_title(title_str)
-    plt.suptitle(title_str, fontsize=20)
+    plt.suptitle(title_str, fontsize=25)
 
     for coast_ctr, coast_str in enumerate(coast_strs):
-        subplot = plt.subplot(len(coast_strs),1,coast_ctr+1)
+        subplot = plt.subplot(2,2,coast_ctr+1)
 
         subplot.set_ylim(0,5)
         subplot.set_title('Coasting Beam of %s' % coast_str)
@@ -31,4 +31,6 @@ def main(dict_keys,arcs,sey_list,coast_strs,hl_measured,hl_pyecloud, length, dev
 
         for arc_ctr, label in enumerate(arcs):
             subplot.plot(sey_list, delta[arc_ctr,:,coast_ctr], label=label)
+
+        if coast_ctr+1 == 2:
             subplot.legend(bbox_to_anchor=(1.1, 1))

@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from pyecloud_device import pyecloud_device
 
 # Function for device
-def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list, verbose=False):
-    
+def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list, args_l, verbose=False):
+
     pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, device_list, coast_strs, hl_pyecloud)
 
     dip_begin = 1.10
@@ -39,7 +39,7 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
             fig = plt.figure()
             fig_ctr += 1
             title_str = 'Valid pairs of dip and quad SEY %i. Average of two coasting intensities.' % fig_ctr
-            plt.suptitle(title_str,fontsize=22)
+            plt.suptitle(title_str,fontsize=25)
             fig.canvas.set_window_title(title_str)
 
         sp = plt.subplot(2,2,arc_ctr%4+1)
@@ -66,10 +66,14 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
         sp.plot([diag_left, diag_right], [diag_left,diag_right], '--', color='black', label='diagonal')
 
         sp.set_title('Arc %s' % arc, fontsize=20)
-        sp.set_xlabel('Dipole SEY', fontsize=18)
-        sp.set_ylabel('Quad SEY', fontsize=18)
+        sp.set_xlabel('Dipole SEY')
+        sp.set_ylabel('Quad SEY')
         sp.set_xlim(xlim)
         sp.set_ylim(ylim)
+
+        # Add vertical line for Quad SEY
+        if args_l is not None:
+            sp.axhline(args_l, label='Average Q06', ls='--', color='orange')
 
         if arc_ctr % 4 == 3:
             sp.legend(bbox_to_anchor=(1.1, 1))

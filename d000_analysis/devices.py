@@ -13,7 +13,7 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pye
     fig = plt.figure()
     title_str = 'Heat loads for different devices and scenarios, per m and scaled'
     fig.canvas.set_window_title(title_str)
-    plt.suptitle(title_str,fontsize=22)
+    plt.suptitle(title_str,fontsize=25)
 
     for dev_ctr, device in enumerate(device_list):
         sp = plt.subplot(2,2,dev_ctr+1)

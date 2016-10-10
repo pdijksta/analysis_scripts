@@ -11,7 +11,7 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
         for coast_ctr in xrange(len(coast_strs)):
             for device_ctr, device in enumerate(devices):
                 data[key_ctr,coast_ctr,:] += hl_pyecloud[key_ctr,device_ctr,coast_ctr,:] * length[device]
-   
+
     fig_ctr = 0
     sp = None
     for arc_ctr, arc in enumerate(arcs):
@@ -22,14 +22,14 @@ def main(hl_pyecloud, hl_measured, length, arc_uncertainty, scenarios_labels_dic
             fig_ctr += 1
             title_str = 'Half cell heat loads %i' % fig_ctr
             fig.canvas.set_window_title(title_str)
-            plt.suptitle(title_str,fontsize=24)
+            plt.suptitle(title_str,fontsize=25)
 
         sp = plt.subplot(2,2,(arc_ctr%4)+1, sharex = sp)
         sp.set_xlabel('SEY Parameter',fontsize=18)
         sp.set_ylabel('Heat load [W]',fontsize=18)
         mean_uncertainty = np.mean(arc_uncertainty[:,arc_ctr])
         sp.set_title('Arc %s - Mean heat load uncertainty: %.1f W' % (arc, mean_uncertainty))
-        
+
         for key_ctr, key in enumerate(dict_keys):
             color = colors.next()[u'color']
             sp.plot(sey_list, hl_measured[key_ctr,arc_ctr]*one_list, '--', color=color)

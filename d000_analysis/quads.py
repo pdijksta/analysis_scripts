@@ -25,7 +25,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
             fig=plt.figure()
             fig_ctr += 1
             title_str = 'Heat loads for quadrupoles' + ' %i' % fig_ctr
-            plt.suptitle(title_str)
+            plt.suptitle(title_str, fontsize=25)
             fig.canvas.set_window_title(title_str)
         sp = plt.subplot(2,2,quad_ctr%4+1)
         sp.set_xlabel('SEY Parameter')
@@ -33,7 +33,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
         sp.set_title(quad)
 
         colors = itertools.cycle(plt.rcParams['axes.prop_cycle'])
-        
+
         for key_ctr, key in enumerate(dict_keys):
             color = colors.next()[u'color']
             measured = hl_pm_measured_quads[key_ctr,quad_ctr]
@@ -71,7 +71,7 @@ def main(devices, coast_strs, hl_pyecloud, hl_pm_measured_quads, dict_keys, quad
     # For all coasting beams
     fig=plt.figure()
     title_str = 'Min/Max SEY for Quadrupoles'
-    plt.suptitle(title_str)
+    plt.suptitle(title_str,fontsize=25)
     fig.canvas.set_window_title(title_str)
 
     sp = plt.subplot(2,2,1)

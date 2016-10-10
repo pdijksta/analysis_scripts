@@ -20,6 +20,7 @@ arg.add_argument('-d', help='Simulated HL for every device.', action='store_true
 arg.add_argument('-q', help='Measured and simulated HL for all Quads.', action='store_true')
 arg.add_argument('-m', help='Measured data with subtracted Imp/SR heat load.', action='store_true')
 arg.add_argument('-o', help='Dual Optimization. Assumes Drift SEY equals Arc SEY', action='store_true')
+arg.add_argument('-l', help='Show vertical line for dual Optimization (set quad SEY).', metavar='Quad SEY', type=float, default=None)
 arg.add_argument('-g', help='Global optimization for arcs, assumes equal SEY for all devices.', action='store_true')
 arg.add_argument('-a', help='Measured and simulated HL for all Arcs, assumes equal SEY for all devices.', action='store_true')
 arg.add_argument('-f', help='Full Output. Set all other options to true.', action='store_true')
@@ -191,7 +192,7 @@ one_list = np.ones_like(sey_list)
 # Dual optimization
 if args.o:
     from d000_analysis.dual_optimization import main
-    main(hl_pyecloud, devices, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list)
+    main(hl_pyecloud, devices, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list, args.l)
 
  # Global optimization
 if args.g:

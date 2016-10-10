@@ -23,7 +23,7 @@ def init_pyplot():
 
     plt.rcParams['axes.linewidth'] = 2.0
     plt.rcParams['axes.labelsize'] = labelsize
-    plt.rcParams['axes.titlesize'] = u'large'
+    plt.rcParams['axes.titlesize'] = 24
     plt.rcParams['lines.markersize'] = 9.0
     plt.rcParams['lines.markeredgewidth'] = 1
 

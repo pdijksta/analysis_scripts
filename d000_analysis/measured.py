@@ -59,7 +59,7 @@ class Handle_devs:
                 fig = plt.figure()
                 title = 'Measured HL for %s %i' % (self.name, int(dev_ctr/4)+1)
                 fig.canvas.set_window_title(title)
-                plt.suptitle(title)
+                plt.suptitle(title, fontsize=25)
 
             sp_nr = dev_ctr%4 + 1
             sp = plt.subplot(2,2,sp_nr)
@@ -79,7 +79,7 @@ class Handle_devs:
 
                 sp.plot(intensity_list_float,this_hl, marker='x', label=energy, color=color)
                 sp.fill_between(intensity_list_float,lower, higher, color=color, alpha=0.5)
-                sp.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label='Model', color=color, ls='--')
+                sp.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label='Impedance', color=color, ls='--')
 
             if sp_nr == 2:
                 sp.legend(bbox_to_anchor=(1.1, 1))
@@ -88,7 +88,7 @@ class Handle_devs:
         fig = plt.figure()
         title = 'Measured HL for all Arcs, e-cloud only'
         fig.canvas.set_window_title(title)
-        plt.suptitle(title)
+        plt.suptitle(title, fontsize=25)
 
         for energy_ctr, energy in enumerate(energy_list):
             sp = plt.subplot(2,2,energy_ctr+1)
