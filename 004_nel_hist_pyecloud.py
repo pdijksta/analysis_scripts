@@ -1,7 +1,6 @@
-import sys
-import cPickle
-import argparse
+# Plot the electrons in the chamber for various devices, SEYs and coasting beams
 
+import cPickle
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -23,8 +22,8 @@ with open(nel_hist_pkl_name, 'r') as pkl_file:
 xg_hist = nel_hist_dict['xg_hist']
 
 
-# Compare coasting beams
-beam = 'B1'
+# Plots
+beam = 'B2'
 this_sey_list = ['1.10', '1.40', '1.50']
 yy_zero = np.zeros_like(xg_hist)
 
