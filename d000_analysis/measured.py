@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import itertools
 
 # TODO: - automate these 2 lists!
-#       - change this script to a class
-#       - or maybe not...
 
 intensity_list = ['0.7e11', '0.9e11', '1.1e11']
 intensity_list_float = [float(string) for string in intensity_list]
@@ -12,7 +10,7 @@ energy_list = ['450GeV', '6.5TeV']
 
 
 class Handle_devs:
-    def __init__(self, devs_list, hl_pm_model, hl_pm_measured, dev_pm_uncertainty, get_energy, get_intensity, dict_keys, name):
+    def __init__(self, devs_list, hl_pm_model, hl_pm_measured, dev_pm_uncertainty, get_energy, get_intensity, dict_keys, name, len_arc_quad_dict):
 
         self.devs_list = devs_list
         self.hl_pm_model = hl_pm_model
@@ -22,6 +20,7 @@ class Handle_devs:
         self.get_energy = get_energy
         self.get_intensity = get_intensity
         self.dict_keys = dict_keys
+        self.length_dict = len_arc_quad_dict
 
         self._create_data_arrays()
 
@@ -63,7 +62,9 @@ class Handle_devs:
 
             sp_nr = dev_ctr%4 + 1
             sp = plt.subplot(2,2,sp_nr)
-            sp.set_ylabel('Heat Load per m [W]')
+            sp2 = sp.twinx()
+            sp2.set_ylabel('Heat Load [W/hc]')
+            sp.set_ylabel('Heat Load [W/m]')
             sp.set_xlabel('Bunch Intensity [p+]')
             sp.set_title(dev)
             sp.set_xlim(0.6e11,1.2e11)
@@ -81,6 +82,9 @@ class Handle_devs:
                 sp.fill_between(intensity_list_float,lower, higher, color=color, alpha=0.5)
                 sp.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label='Impedance', color=color, ls='--')
 
+            yaxes_factor = self.length_dict[dev]
+            lower, higher = sp.get_ylim()
+            sp2.set_ylim((yaxes_factor*lower, yaxes_factor*higher))
             if sp_nr == 2:
                 sp.legend(bbox_to_anchor=(1.1, 1))
 
@@ -92,7 +96,7 @@ class Handle_devs:
 
         for energy_ctr, energy in enumerate(energy_list):
             sp = plt.subplot(2,2,energy_ctr+1)
-            sp.set_ylabel('Heat Load per m [W]')
+            sp.set_ylabel('Heat Load [W/m]')
             sp.set_xlabel('Bunch Intensity [p+]')
             sp.set_title(energy)
             sp.set_xlim(0.6e11,1.2e11)
@@ -105,11 +109,11 @@ class Handle_devs:
 
 
 def main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict,
-        get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty):
+        get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty, len_arc_quad_dict):
 
     # Arcs
-    Handle_devs(arcs, hl_pm_model_arcs, hl_pm_measured, arc_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Arcs')
+    Handle_devs(arcs, hl_pm_model_arcs, hl_pm_measured, arc_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Arcs', len_arc_quad_dict)
 
     # Quads
-    Handle_devs(quads, hl_pm_model_quads, hl_pm_measured_quads, quad_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Quadrupoles')
+    Handle_devs(quads, hl_pm_model_quads, hl_pm_measured_quads, quad_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Quadrupoles', len_arc_quad_dict)
 
