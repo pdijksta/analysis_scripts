@@ -7,11 +7,11 @@ import argparse
 
 import myfilemanager as mlo
 import mystyle as ms
-from LHC_Heatloads import magnet_length
+from d000_analysis.LHC_Heatloads import magnet_length
 from RcParams import init_pyplot
 init_pyplot()
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Show bunch by bunch power losses from PyECLOUD simulations and measurements.')
 parser.add_argument('-q', help='Quadrupole SEY', metavar='Quad SEY', type=float)
 parser.add_argument('-d', help='Drift SEY', metavar='Drift SEY', type=float)
 parser.add_argument('beam', help='B1 | B2', type=str, metavar='BEAM')
@@ -46,8 +46,6 @@ l_dip = 3 * magnet_length['special_HC_D2'][0]
 l_quad = magnet_length['special_HC_Q1'][0]
 l_drift = l_hc - l_dip - l_quad
 
-sim_ident_template = '%s_%s_%s_%s_sey%.2f_coast%s'
-
 #beam_snapshot = 'Fill5219_cut0.920h_450GeV_for_triplets_B1.mat'
 beam_snapshot = 'Fill5219_cut1.800h_6500GeV_for_triplets_%s.mat' % args.beam
 
@@ -68,7 +66,7 @@ N_sims = len(sey_vect)
 
 def get_simulation_ob(device_name, sey, coast_str='0.5'):
 
-    sim_ident = sim_ident_template % (beam_snapshot.split('.mat')[0], machine_name, device_name, beam_name, sey, coast_str)
+    sim_ident = '%s_%s_%s_%s_sey%.2f_coast%s' % (beam_snapshot.split('.mat')[0], machine_name, device_name, beam_name, sey, coast_str)
     ob = mlo.myloadmat_to_obj(main_folder + '/' + sim_ident+'/Pyecltest.mat')
     t_bun = np.arange(0.,np.max(ob.t),  ob.b_spac)
     L_imp_t = np.cumsum(ob.En_imp_eV_time-ob.En_emit_eV_time); #in eV

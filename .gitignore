@@ -1,6 +1,5 @@
 *.pyc
 screenshots/
-*.pkl
 *.swp
 all_data/
 beam_snapshots/

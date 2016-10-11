@@ -15,7 +15,7 @@ init_pyplot()
 
 # Arguments
 
-arg = argparse.ArgumentParser(description='')
+arg = argparse.ArgumentParser(description='Analysis scripts for \"SEY study arcs\".')
 arg.add_argument('-d', help='Simulated HL for every device.', action='store_true')
 arg.add_argument('-q', help='Measured and simulated HL for all Quads.', action='store_true')
 arg.add_argument('-m', help='Measured data with subtracted Imp/SR heat load.', action='store_true')
