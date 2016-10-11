@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from LHCMeasurementTools.LHC_Heatloads import magnet_length
+from simulation_parameters import \
+        dict_keys, scenarios_labels_dict, coast_linestyle_dict, coast_strs, sey_list, devices, device_labels_dict
 from RcParams import init_pyplot
 init_pyplot()
 
@@ -29,36 +31,6 @@ if args.f:
     args.g = args.d = args.a = args.q = args.o = args.m = True
 
 # Config
-
-# Parameters of the study
-dict_keys = ['5219 1.8', '5222 2.3', '5223 3.0', '5219 0.92', '5222 1.63', '5223 2.3']
-print('Scenarios:\n' + str(dict_keys))
-
-scenarios_labels_dict = {\
-        '5219 1.8':  '1.1e11 6.5TeV',
-        '5219 0.92': '1.1e11 450GeV',
-        '5222 2.3':  '0.9e11 6.5TeV',
-        '5223 3.0':  '0.7e11 6.5TeV',
-        '5222 1.63': '0.9e11 450GeV',
-        '5223 2.3':  '0.7e11 450GeV'
-        }
-
-#coast_strs = ['1.0', '0.5', '0.0']
-coast_linestyle_dict = {\
-        '1.0': '-',
-        '0.5': '-.',
-        '0.0': ':'
-        }
-coast_strs = coast_linestyle_dict.keys()
-
-sey_list = np.arange(1.1,1.51,0.05)
-
-devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
-device_labels_dict = {\
-        'ArcDipReal': 'Dipole',
-        'ArcQuadReal': 'Quadrupole',
-        'Drift': 'Drift'
-        }
 
 # Names of devices, regular expressions
 re_arc = re.compile('^S\d\d$')
@@ -166,6 +138,7 @@ hl_pyecloud_beams = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),
 for key_ctr, key in enumerate(dict_keys):
     for device_ctr, device in enumerate(devices):
         if device == 'Drift' and get_energy(key) == '450GeV':
+            # No E-Cloud expected here!
             hl_pyecloud[key_ctr,device_ctr,:,:] = 0
             continue
         for coast_ctr, coast_str in enumerate(coast_strs):
