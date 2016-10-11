@@ -12,10 +12,12 @@ from scipy.constants import e as const_e
 # Config
 
 root_dir = './all_data'
-pkl_name = './heatload_pyecloud.pkl'
+hl_pkl_name = './heatload_pyecloud.pkl'
+nel_hist_pkl_name = './nel_hist_pyecloud.pkl'
 fail_name = './fail_list.txt'
 
 hl_dict = {}
+nel_hist_dict = {}
 all_files = os.listdir(root_dir)
 # Regular Expression for the folder names
 folder_re = re.compile('^Fill(\d+)_cut(\d+\.\d[1-9]*)0*h_\d+GeV_for_triplets_(B[1,2])_LHC_([A-Za-z]+)_\d+GeV_sey([\d\.]+)_coast([\d\.]+)$')
@@ -81,9 +83,7 @@ for folder in all_files:
         success_ctr += 1
 
     heatload = np.sum(matfile['energ_eV_impact_hist'])*const_LHC_frev*const_e
-#    e_transverse_hist = np.sum(matfile['nel_hist'],axis=0)
-#    print(e_transverse_hist)
-#    sys.exit()
+    e_transverse_hist = np.sum(matfile['nel_hist'],axis=0)
     
     keys = [main_key, device, coast, sey]
 
@@ -91,8 +91,13 @@ for folder in all_files:
     insert_to_nested_dict(hl_dict, 1, keys+['Beam_nr'], add_up=True)
     insert_to_nested_dict(hl_dict, heatload, keys+[beam], must_enter=True)
 
-with open(pkl_name,'w') as pkl:
-    cPickle.dump(hl_dict,pkl,2)
+    insert_to_nested_dict(nel_hist_dict,e_transverse_hist,keys+[beam],must_enter=True)
+
+with open(hl_pkl_name,'w') as pkl_file:
+    cPickle.dump(hl_dict,pkl_file,2)
+
+with open(nel_hist_pkl_name,'w') as pkl_file:
+    cPickle.dump(hl_dict,pkl_file,2)
 
 print(fail_ctr, success_ctr)
 print(fail_lines)

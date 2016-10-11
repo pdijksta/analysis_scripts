@@ -5,9 +5,9 @@ import itertools
 # TODO: - automate these 2 lists!
 
 intensity_list = ['0.7e11', '0.9e11', '1.1e11']
-intensity_list_float = [float(string) for string in intensity_list]
 energy_list = ['450GeV', '6.5TeV']
 
+intensity_list_float = [float(string) for string in intensity_list]
 
 class Handle_devs:
     def __init__(self, devs_list, hl_pm_model, hl_pm_measured, dev_pm_uncertainty, get_energy, get_intensity, dict_keys, name, len_arc_quad_dict):
@@ -25,7 +25,6 @@ class Handle_devs:
         self._create_data_arrays()
 
         self._plot_devs()
-
 
     def _create_data_arrays(self):
 

@@ -7,7 +7,6 @@ import re
 
 import matplotlib.pyplot as plt
 import numpy as np
-import math
 
 from LHCMeasurementTools.LHC_Heatloads import magnet_length
 from RcParams import init_pyplot
@@ -44,12 +43,13 @@ scenarios_labels_dict = {\
         '5223 2.3':  '0.7e11 450GeV'
         }
 
-coast_strs = ['1.0', '0.5', '0.0']
+#coast_strs = ['1.0', '0.5', '0.0']
 coast_linestyle_dict = {\
         '1.0': '-',
         '0.5': '-.',
         '0.0': ':'
         }
+coast_strs = coast_linestyle_dict.keys()
 
 sey_list = np.arange(1.1,1.51,0.05)
 
@@ -106,14 +106,20 @@ def get_intensity(key):
 with open('./heatload_arcs.pkl', 'r') as pickle_file:
     heatloads_dict = cPickle.load(pickle_file)
 
-# Define arcs and quads
+# Define arcs and quads and store their lengths
 arcs = []
 quads = []
-for key in heatloads_dict[dict_keys[0]].keys():
+len_arc_quad_dict = {}
+for key in heatloads_dict[dict_keys[0]]:
     if re_arc.match(key):
         arcs.append(key)
-    elif re_quad.match(key):
+        len_arc_quad_dict[key] = len_cell
+    elif re_quad_15.match(key):
         quads.append(key)
+        len_arc_quad_dict[key] = len_q6_15
+    elif re_quad_28.match(key):
+        quads.append(key)
+        len_arc_quad_dict[key] = len_q6_28
 
 with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
     heatloads_dict_pyecloud = cPickle.load(pickle_file)
@@ -141,17 +147,9 @@ for key_ctr, key in enumerate(dict_keys):
 
     # Quads
     for quad_ctr,quad in enumerate(quads):
-        # Correct for length
-        if re_quad_15.match(quad):
-            length_quad = len_q6_15
-        elif re_quad_28.match(quad):
-            length_quad = len_q6_28
-        else:
-            raise ValueError('Illegal Quad %s') % quad
-
         # heat loads per m are needed here
-        hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[key][quad][0] / length_quad
-        quad_pm_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / length_quad
+        hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[key][quad][0] / len_arc_quad_dict[quad]
+        quad_pm_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / len_arc_quad_dict[quad]
 
     hl_pm_measured_quads[key_ctr,:] -= hl_model_quads[key_ctr] / len_cell
 
@@ -162,8 +160,9 @@ hl_pm_model_quads = hl_model_quads / len_cell
 arc_pm_uncertainty = arc_uncertainty / len_cell
 
 # Simulation data
-# Sum over beam 1 and 2
 hl_pyecloud = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),len(sey_list)))
+hl_pyecloud_beams = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),len(sey_list),2))
+
 for key_ctr, key in enumerate(dict_keys):
     for device_ctr, device in enumerate(devices):
         if device == 'Drift' and get_energy(key) == '450GeV':
@@ -172,18 +171,27 @@ for key_ctr, key in enumerate(dict_keys):
         for coast_ctr, coast_str in enumerate(coast_strs):
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
-                hl = 0
                 try:
                     hl = heatloads_dict_pyecloud[key][device][coast_str][sey_str]['Total']
                 except KeyError:
                     print('Key error for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
-                    continue
-                # If no sim data for one beam, double the heatload from the other beam
-                if heatloads_dict_pyecloud[key][device][coast_str][sey_str]['Beam_nr'] == 1:
-                    print('Correction for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
-                    hl *= 2
+                else:
+                    # If no sim data for one beam, double the heatload from the other beam
+                    if heatloads_dict_pyecloud[key][device][coast_str][sey_str]['Beam_nr'] == 1:
+                        print('Correction for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
+                        hl *= 2
 
-                hl_pyecloud[key_ctr,device_ctr,coast_ctr,sey_ctr] += hl
+                    hl_pyecloud[key_ctr,device_ctr,coast_ctr,sey_ctr] += hl
+                try:
+                    hl_b1 = heatloads_dict_pyecloud[key][device][coast_str][sey_str]['B1']
+                    hl_pyecloud_beams[key_ctr,device_ctr,coast_ctr,sey_ctr,0] = hl_b1
+                except KeyError:
+                    print('Key error for fill %s, device %s sey %s coast %s beam %s' % (key, device, sey_str, coast_str,'B1'))
+                try:
+                    hl_b2 = heatloads_dict_pyecloud[key][device][coast_str][sey_str]['B2']
+                    hl_pyecloud_beams[key_ctr,device_ctr,coast_ctr,sey_ctr,1] = hl_b2
+                except KeyError:
+                    print('Key error for fill %s, device %s sey %s coast %s beam %s' % (key, device, sey_str, coast_str,'B2'))
 
 # Plots
 plt.close('all')
@@ -218,6 +226,6 @@ if args.q:
 if args.m:
     from d000_analysis.measured import main
     main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict,
-            get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty)
+            get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty, len_arc_quad_dict)
 
 plt.show()
