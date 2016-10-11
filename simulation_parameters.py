@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 # Parameters of the study
 dict_keys = ['5219 1.8', '5222 2.3', '5223 3.0', '5219 0.92', '5222 1.63', '5223 2.3']
@@ -19,6 +20,7 @@ coast_linestyle_dict = {\
         '0.0': ':'
         }
 coast_strs = coast_linestyle_dict.keys()
+coast_strs.sort(reverse=True)
 
 sey_list = np.arange(1.1,1.51,0.05)
 
@@ -28,3 +30,21 @@ device_labels_dict = {\
         'ArcQuadReal': 'Quadrupole',
         'Drift': 'Drift'
         }
+
+# Obtain info from scenarios_labels_dict
+re_filln = re.compile('^(\d{4})')
+def get_filln(key):
+    info = re.search(re_filln,key)
+    return info.group(1)
+
+re_energy = re.compile('([\d\.]{3}[GT]eV)')
+def get_energy(key):
+    label = scenarios_labels_dict[key]
+    info = re.search(re_energy,label)
+    return info.group(1)
+
+re_intensity = re.compile('^(\d\.\de\d\d)')
+def get_intensity(key):
+    label = scenarios_labels_dict[key]
+    info = re.search(re_intensity,label)
+    return info.group(1)

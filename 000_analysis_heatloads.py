@@ -10,7 +10,8 @@ import numpy as np
 
 from LHCMeasurementTools.LHC_Heatloads import magnet_length
 from simulation_parameters import \
-        dict_keys, scenarios_labels_dict, coast_linestyle_dict, coast_strs, sey_list, devices, device_labels_dict
+        dict_keys, scenarios_labels_dict, coast_linestyle_dict, coast_strs, sey_list, devices, device_labels_dict, \
+        get_filln, get_energy, get_intensity
 from RcParams import init_pyplot
 init_pyplot()
 
@@ -55,24 +56,6 @@ length['ArcQuadReal'] = len_quad
 length['ArcDipReal'] = dip_per_halfcell * len_dip
 length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 length['HalfCell'] = len_cell
-
-# Obtain info from scenarios_labels_dict
-re_filln = re.compile('^(\d{4})')
-def get_filln(key):
-    info = re.search(re_filln,key)
-    return info.group(1)
-
-re_energy = re.compile('([\d\.]{3}[GT]eV)')
-def get_energy(key):
-    label = scenarios_labels_dict[key]
-    info = re.search(re_energy,label)
-    return info.group(1)
-
-re_intensity = re.compile('^(\d\.\de\d\d)')
-def get_intensity(key):
-    label = scenarios_labels_dict[key]
-    info = re.search(re_intensity,label)
-    return info.group(1)
 
 # Import nested dictionaries
 with open('./heatload_arcs.pkl', 'r') as pickle_file:
