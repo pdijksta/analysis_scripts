@@ -30,7 +30,7 @@ fail_lines_IO = ''
 const_LHC_frev = 11.2455e3
 
 def insert_to_nested_dict(dictionary, value, keys, must_enter=False, add_up=False):
-    """ 
+    """
     Inserts value to nested dictionary. The location is specified by keys.
     If must_enter is set to True, an error is raised if the entry is already present.
     """
@@ -84,14 +84,17 @@ for folder in all_files:
 
     heatload = np.sum(matfile['energ_eV_impact_hist'])*const_LHC_frev*const_e
     e_transverse_hist = np.sum(matfile['nel_hist'],axis=0)
-    
+
     keys = [main_key, device, coast, sey]
 
     insert_to_nested_dict(hl_dict, heatload, keys+['Total'], add_up=True)
     insert_to_nested_dict(hl_dict, 1, keys+['Beam_nr'], add_up=True)
     insert_to_nested_dict(hl_dict, heatload, keys+[beam], must_enter=True)
 
-    insert_to_nested_dict(nel_hist_dict,e_transverse_hist,keys+[beam],must_enter=True)
+    insert_to_nested_dict(nel_hist_dict, e_transverse_hist, keys+[beam], must_enter=True)
+
+# add xg_hist variable only once
+insert_to_nested_dict(nel_hist_dict, matfile['xg_hist'][0], ['xg_hist'], must_enter=True)
 
 with open(hl_pkl_name, 'w') as pkl_file:
     cPickle.dump(hl_dict, pkl_file, 2)
