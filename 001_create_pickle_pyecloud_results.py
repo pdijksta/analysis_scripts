@@ -12,6 +12,8 @@ from scipy.constants import e as const_e
 # Config
 
 root_dir = './all_data'
+pkl_name = './heatload_pyecloud.pkl'
+fail_name = './fail_list.txt'
 
 hl_dict = {}
 all_files = os.listdir(root_dir)
@@ -51,12 +53,14 @@ for folder in all_files:
 
     filln = file_info.group(1)
     time_of_interest = file_info.group(2)
-    main_key = filln + ' ' + time_of_interest
     beam = file_info.group(3)
     device = file_info.group(4)
     sey = file_info.group(5)
     coast = file_info.group(6)
     print(filln,time_of_interest,beam,device,sey,coast)
+
+    # No need to keep fill and time separate
+    main_key = filln + ' ' + time_of_interest
 
     mat_str = root_dir + '/' + folder + '/Pyecltest.mat'
     if not os.path.isfile(mat_str):
@@ -64,7 +68,6 @@ for folder in all_files:
         fail_ctr += 1
         fail_lines += folder + '\n'
         continue
-
 
     print('Trying to read %s.' % mat_str)
     try:
@@ -81,21 +84,21 @@ for folder in all_files:
 #    e_transverse_hist = np.sum(matfile['nel_hist'],axis=0)
 #    print(e_transverse_hist)
 #    sys.exit()
+    
+    keys = [main_key, device, coast, sey]
 
-    insert_to_nested_dict(hl_dict, heatload, [main_key,device,coast,sey,'Total'], add_up=True)
-    insert_to_nested_dict(hl_dict, 1, [main_key,device,coast,sey,'Beam_nr'], add_up=True)
-    insert_to_nested_dict(hl_dict, heatload, [main_key, device, coast, sey, beam], must_enter=True)
+    insert_to_nested_dict(hl_dict, heatload, keys+['Total'], add_up=True)
+    insert_to_nested_dict(hl_dict, 1, keys+['Beam_nr'], add_up=True)
+    insert_to_nested_dict(hl_dict, heatload, keys+[beam], must_enter=True)
 
-print(hl_dict)
-
-#with open('./heatload_pyecloud.pkl','w') as pkl:
-#    cPickle.dump(hl_dict,pkl)
+with open(pkl_name,'w') as pkl:
+    cPickle.dump(hl_dict,pkl,2)
 
 print(fail_ctr, success_ctr)
 print(fail_lines)
 print('IO')
 print(fail_lines_IO)
 
-with open('./fail_list.txt','w') as fail_file:
+with open(fail_name,'w') as fail_file:
     fail_file.write(fail_lines)
     fail_file.write(fail_lines_IO)
