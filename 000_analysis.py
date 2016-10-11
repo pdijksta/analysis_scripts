@@ -174,12 +174,12 @@ for key_ctr, key in enumerate(dict_keys):
                 sey_str = '%.2f' % sey
                 hl = 0
                 try:
-                    hl = heatloads_dict_pyecloud[key][device][coast_str][sey_str][0]
+                    hl = heatloads_dict_pyecloud[key][device][coast_str][sey_str]['Total']
                 except KeyError:
                     print('Key error for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
                     continue
                 # If no sim data for one beam, double the heatload from the other beam
-                if heatloads_dict_pyecloud[key][device][coast_str][sey_str][1] == 1:
+                if heatloads_dict_pyecloud[key][device][coast_str][sey_str]['Beam_nr'] == 1:
                     print('Correction for fill %s, device %s sey %s coast %s.' % (key, device, sey_str, coast_str))
                     hl *= 2
 
