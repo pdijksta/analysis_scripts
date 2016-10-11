@@ -93,11 +93,11 @@ for folder in all_files:
 
     insert_to_nested_dict(nel_hist_dict,e_transverse_hist,keys+[beam],must_enter=True)
 
-with open(hl_pkl_name,'w') as pkl_file:
-    cPickle.dump(hl_dict,pkl_file,2)
+with open(hl_pkl_name, 'w') as pkl_file:
+    cPickle.dump(hl_dict, pkl_file, 2)
 
-with open(nel_hist_pkl_name,'w') as pkl_file:
-    cPickle.dump(hl_dict,pkl_file,2)
+with open(nel_hist_pkl_name, 'w') as pkl_file:
+    cPickle.dump(nel_hist_dict, pkl_file, 2)
 
 print(fail_ctr, success_ctr)
 print(fail_lines)
