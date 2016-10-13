@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
-from LHCMeasurementTools.mystyle import colorprog
 
 from pyecloud_device import pyecloud_device
 
@@ -49,14 +48,13 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pye
                     else:
                         label = None
                     ls = coast_linestyle_dict[coast_str]
-                    
+
                     if fig_nr == fig_all_nr or coast_ctr == 0:
                         sp.plot(sey_list,data[sce_ctr,:],label=label,color=color, ls=ls)
 
-            if dev_ctr == 1 or (dev_ctr == 2 and fig_nr == fig_all_nr):
+            if dev_ctr == 1 or dev_ctr == 2 and fig_nr == fig_all_nr:
                 sp.legend(bbox_to_anchor=(1.1, 1),loc='upper left',fontsize=18)
 
             axes_factor = length[device]
             unscaled_min, unscaled_max =  sp.get_ylim()
             sp2.set_ylim(axes_factor*unscaled_min,axes_factor*unscaled_max)
-
