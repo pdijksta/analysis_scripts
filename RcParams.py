@@ -24,7 +24,7 @@ def init_pyplot():
     plt.rcParams['axes.linewidth'] = 2.0
     plt.rcParams['axes.labelsize'] = labelsize
     plt.rcParams['axes.titlesize'] = 24
-    plt.rcParams['lines.markersize'] = 9.0
+    plt.rcParams['lines.markersize'] = 7.0
     plt.rcParams['lines.markeredgewidth'] = 1
 
     plt.rcParams['axes.prop_cycle'] = plt.cycler(u'color', [u'b', u'g', u'r', u'c', u'm', u'y', u'k',u'orange'])
