@@ -1,19 +1,19 @@
 import sys
-sys.path.append('../backup_lhcscrub_python/LHCMeasurementTools')
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io as sio
 import argparse
 
-import myfilemanager as mlo
-import mystyle as ms
-from d000_analysis.LHC_Heatloads import magnet_length
+import LHCMeasurementTools.myfilemanager as mlo
+import LHCMeasurementTools.mystyle as ms
+from LHCMeasurementTools.LHC_Heatloads import magnet_length
+
 from RcParams import init_pyplot
 init_pyplot()
 
 parser = argparse.ArgumentParser(description='Show bunch by bunch power losses from PyECLOUD simulations and measurements.')
-parser.add_argument('-q', help='Quadrupole SEY', metavar='Quad SEY', type=float)
-parser.add_argument('-d', help='Drift SEY', metavar='Drift SEY', type=float)
+parser.add_argument('q', help='Quadrupole SEY', metavar='Quad SEY', type=float)
+parser.add_argument('d', help='Drift SEY', metavar='Drift SEY', type=float)
 parser.add_argument('beam', help='B1 | B2', type=str, metavar='BEAM')
 args = parser.parse_args()
 
@@ -68,6 +68,7 @@ def get_simulation_ob(device_name, sey, coast_str='0.5'):
 
     sim_ident = '%s_%s_%s_%s_sey%.2f_coast%s' % (beam_snapshot.split('.mat')[0], machine_name, device_name, beam_name, sey, coast_str)
     ob = mlo.myloadmat_to_obj(main_folder + '/' + sim_ident+'/Pyecltest.mat')
+    # from Gianni
     t_bun = np.arange(0.,np.max(ob.t),  ob.b_spac)
     L_imp_t = np.cumsum(ob.En_imp_eV_time-ob.En_emit_eV_time); #in eV
     L_imp = np.interp(t_bun, ob.t, L_imp_t) #in eV
@@ -132,40 +133,57 @@ sp2.legend(bbox_to_anchor=(1, 1.02),  loc='upper left')
 
 
 # Figure for devices only
-fig = plt.figure()
-title_str = 'Simulated bunch by bunch power losses for different devices.'
-fig.canvas.set_window_title(title_str)
-plt.suptitle(title_str,fontsize=25)
 
-sp = None
-for dev_ctr, device in enumerate(devices):
-    sp_ctr = dev_ctr +1
-    sp = plt.subplot(3,1,sp_ctr, sharex=sp)
-    sp.set_title(device)
-    ms.sciy()
-    sp.set_ylabel('Power loss [W/m]')
-    if sp_ctr == 3:
-        sp.set_xlabel('25 ns slot')
+fig_all_nr = len(coast_strs)
+for fig_nr in xrange(len(coast_strs)+1):
+    min_bunch_nr = 3000
+    fig = plt.figure()
+    window_title_str = 'Simulated bunch by bunch power losses for different devices %i.' % fig_nr
+    fig.canvas.set_window_title(title_str)
+    if fig_nr == fig_all_nr:
+        suptitle_str = 'Simulated bunch power losses'
+    else:
+        suptitle_str = 'Simulated bunch power losses for %s e9 coasting beam' % coast_strs[fig_nr]
+    plt.suptitle(suptitle_str,fontsize=25)
 
-    for coast_ctr, coast_str in enumerate(coast_strs):
-       for sey_ctr, sey in enumerate(sey_vect):
-           try:
-               contribution_per_meter, ob, t_bun = get_simulation_ob(device, sey, coast_str)
+    sp = None
+    for dev_ctr, device in enumerate(devices):
+        sp_ctr = dev_ctr +1
+        sp = plt.subplot(3,1,sp_ctr, sharex=sp)
+        sp.set_title(device)
+        ms.sciy()
+        sp.set_ylabel('Power loss [W/m]')
+        if sp_ctr == 3:
+            sp.set_xlabel('25 ns slot')
 
-               color_curr = ms.colorprog(sey_ctr, N_sims)
-               if sp_ctr == 1 and coast_ctr == 0:
-                   label = sey
-               elif sp_ctr == 2 and sey_ctr == 0:
-                   label = coast_str + ' e9 coasting'
-               else:
-                   label = None
+        for coast_ctr, coast_str in enumerate(coast_strs):
+            if fig_nr != fig_all_nr and fig_nr != coast_ctr:
+                continue
+            for sey_ctr, sey in enumerate(sey_vect):
+                try:
+                    contribution_per_meter, ob, t_bun = get_simulation_ob(device, sey, coast_str)
 
-               sp.plot(t_bun[:-1]/25e-9, contribution_per_meter, '.-', color=color_curr, label=label, ls=coast_linestyle_dict[coast_str])
+                    color_curr = ms.colorprog(sey_ctr, N_sims)
+                    if sp_ctr == 1 and coast_ctr == 0 or coast_ctr == fig_nr:
+                        label = sey
+                    elif sp_ctr == 2 and sey_ctr == 0 and fig_nr == fig_all_nr:
+                        label = coast_str
+                    else:
+                        label = None
 
-           except IOError as err:
-                print('Got:', err)
+                    if fig_nr == fig_all_nr:
+                        ls = coast_linestyle_dict[coast_str]
+                    else:
+                        ls = '-'
 
-    if sp_ctr == 1 or sp_ctr == 2:
-        sp.legend(bbox_to_anchor=(1, 1.02),  loc='upper left')
+                    sp.plot(t_bun[min_bunch_nr:-1]/25e-9, contribution_per_meter[min_bunch_nr:], '.-', color=color_curr, label=label, ls=ls, marker=None)
+
+                except IOError as err:
+                    print('Got:', err)
+
+        if sp_ctr == 1:
+            sp.legend(bbox_to_anchor=(1, 1.02),  loc='upper left', title='SEY')
+        elif sp_ctr == 2 and fig_nr == len(coast_strs):
+            sp.legend(bbox_to_anchor=(1, 1.02),  loc='upper left', title='$10^9$ coasting')
 
 plt.show()
