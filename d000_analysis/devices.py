@@ -23,7 +23,7 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pye
     plt.suptitle(title_str,fontsize=25)
 
     for fig_nr in (fig_all_nr, fig_one_nr):
-        plt.figure(fig_nr)
+        plt.figure()
 
         for dev_ctr, device in enumerate(device_list):
             sp = plt.subplot(2,2,dev_ctr+1)
