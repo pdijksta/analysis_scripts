@@ -10,7 +10,7 @@ energy_list = ['450GeV', '6.5TeV']
 intensity_list_float = [float(string) for string in intensity_list]
 
 class Handle_devs:
-    def __init__(self, devs_list, hl_pm_model, hl_pm_measured, dev_pm_uncertainty, get_energy, get_intensity, dict_keys, name, len_arc_quad_dict):
+    def __init__(self, devs_list, hl_pm_model, hl_pm_measured, dev_pm_uncertainty, get_energy, get_intensity, dict_keys, name, len_arc_quad_dict, model_label):
 
         self.devs_list = devs_list
         self.hl_pm_model = hl_pm_model
@@ -21,6 +21,7 @@ class Handle_devs:
         self.get_intensity = get_intensity
         self.dict_keys = dict_keys
         self.length_dict = len_arc_quad_dict
+        self.model_label = model_label
 
         self._create_data_arrays()
 
@@ -61,8 +62,6 @@ class Handle_devs:
 
             sp_nr = dev_ctr%4 + 1
             sp = plt.subplot(2,2,sp_nr)
-            sp2 = sp.twinx()
-            sp2.set_ylabel('Heat Load [W/hc]')
             sp.set_ylabel('Heat Load [W/m]')
             sp.set_xlabel('Bunch Intensity [p+]')
             sp.set_title(dev)
@@ -79,17 +78,20 @@ class Handle_devs:
 
                 sp.plot(intensity_list_float,this_hl, marker='x', label=energy, color=color)
                 sp.fill_between(intensity_list_float,lower, higher, color=color, alpha=0.5)
-                sp.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label='Impedance', color=color, ls='--')
+                sp.plot(intensity_list_float, self.model[energy_ctr,:], marker='x', label=self.model_label, color=color, ls='--')
 
-            yaxes_factor = self.length_dict[dev]
-            lower, higher = sp.get_ylim()
-            sp2.set_ylim((yaxes_factor*lower, yaxes_factor*higher))
+            if self.name == 'Arcs':
+                sp2 = sp.twinx()
+                sp2.set_ylabel('Heat Load [W/hc]')
+                yaxes_factor = self.length_dict[dev]
+                lower, higher = sp.get_ylim()
+                sp2.set_ylim((yaxes_factor*lower, yaxes_factor*higher))
             if sp_nr == 2:
                 sp.legend(bbox_to_anchor=(1.1, 1))
 
         # Everything in 1 plot
         fig = plt.figure()
-        title = 'Measured HL for all Arcs, e-cloud only'
+        title = 'Measured HL for all %s, e-cloud only' % self.name
         fig.canvas.set_window_title(title)
         plt.suptitle(title, fontsize=25)
 
@@ -111,8 +113,8 @@ def main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios
         get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty, len_arc_quad_dict):
 
     # Arcs
-    Handle_devs(arcs, hl_pm_model_arcs, hl_pm_measured, arc_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Arcs', len_arc_quad_dict)
+    Handle_devs(arcs, hl_pm_model_arcs, hl_pm_measured, arc_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Arcs', len_arc_quad_dict, 'Imp+SR')
 
     # Quads
-    Handle_devs(quads, hl_pm_model_quads, hl_pm_measured_quads, quad_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Quadrupoles', len_arc_quad_dict)
+    Handle_devs(quads, hl_pm_model_quads, hl_pm_measured_quads, quad_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Quadrupoles', len_arc_quad_dict, 'Imp')
 
