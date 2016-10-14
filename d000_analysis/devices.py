@@ -12,18 +12,12 @@ def main(device_list,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pye
 
     title_str = 'Heat loads for different devices and scenarios, per m and scaled'
 
-    fig_all_nr = 1
-    fig_all = plt.figure(fig_all_nr)
-    fig_all.canvas.set_window_title(title_str)
-    plt.suptitle(title_str,fontsize=25)
+    fig_all_nr = 2
+    for fig_nr in (1,2):
+        fig = plt.figure()
+        fig.canvas.set_window_title(title_str)
+        plt.suptitle(title_str,fontsize=25)
 
-    fig_one_nr = 2
-    fig_one = plt.figure(fig_one_nr)
-    fig_one.canvas.set_window_title(title_str)
-    plt.suptitle(title_str,fontsize=25)
-
-    for fig_nr in (fig_all_nr, fig_one_nr):
-        plt.figure()
 
         for dev_ctr, device in enumerate(device_list):
             sp = plt.subplot(2,2,dev_ctr+1)
