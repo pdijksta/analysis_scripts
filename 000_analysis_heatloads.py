@@ -25,8 +25,7 @@ arg.add_argument('-g', help='Global optimization for arcs, assumes equal SEY for
 arg.add_argument('-a', help='Measured and simulated HL for all Arcs, assumes equal SEY for all devices.', action='store_true')
 arg.add_argument('-f', help='Full Output. Set all options above.', action='store_true')
 arg.add_argument('-o', help='Dual Optimization. Assumes Drift SEY equals Arc SEY.\n\
-        Constant_device, SEY, Variable_device, x_min, x_max', nargs=5, metavar='ARG\n\
-        Devices: q, di, dr')
+        Devices: q, di, dr', nargs=5, metavar=('Const_device', 'SEY', 'Var_device', 'min', 'max_SEY'))
 arg.add_argument('-l', help='Show vertical line for dual Optimization.', metavar='SEY', type=float, default=None, nargs='+')
 args = arg.parse_args()
 

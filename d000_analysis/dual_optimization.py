@@ -92,20 +92,16 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
                     xdata.append(possible_xdata[ctr])
                     ydata.append(yy)
 
-            plt.plot(xdata, ydata, label=label)
+            sp.plot(xdata, ydata, label=label)
 
-        # Add diagonal lines
-        xlim = (x_begin,x_end)
-        ylim = (1.1,1.51)
-        diag_left = max(ylim[0], xlim[0])
-        diag_right = min(ylim[1], xlim[1])
-        sp.plot([diag_left, diag_right], [diag_left,diag_right], '--', color='black', label='diagonal')
+        sp.axhline(const_sey, ls='--', color='black', label=device_labels_dict[const_device])
+
 
         sp.set_title('Arc %s' % arc, fontsize=20)
         sp.set_xlabel('%s SEY' % device_labels_dict[x_device])
         sp.set_ylabel('%s SEY' % device_labels_dict[y_device])
-        sp.set_xlim(xlim)
-        sp.set_ylim(ylim)
+        #sp.set_xlim(xlim)
+        #sp.set_ylim(ylim)
 
         # Add vertical line for Quad SEY
         if args_l is not None:
