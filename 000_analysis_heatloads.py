@@ -157,7 +157,8 @@ one_list = np.ones_like(sey_list)
 # Dual optimization
 if args.o:
     from d000_analysis.dual_optimization import main
-    main(hl_pyecloud, devices, coast_strs, scenarios_labels_dict, length, dict_keys, arcs, hl_measured, sey_list, args.l, args.o, device_labels_dict)
+    main(hl_pyecloud, devices, coast_strs, scenarios_labels_dict, length, dict_keys,
+            arcs, hl_measured, sey_list, args.l, args.o, device_labels_dict, get_energy)
 
  # Global optimization
 if args.g:
@@ -167,7 +168,7 @@ if args.g:
 # All devices
 if args.d:
     from d000_analysis.devices import main
-    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict)
+    main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict, get_energy, get_intensity)
 
 # Arcs
 if args.a:

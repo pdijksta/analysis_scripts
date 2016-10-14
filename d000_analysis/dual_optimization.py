@@ -5,7 +5,7 @@ from pyecloud_device import pyecloud_device
 
 # Function for device
 def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, dict_keys, arcs,
-        hl_measured, sey_list, args_l, arguments, device_labels_dict, verbose=False):
+        hl_measured, sey_list, args_l, arguments, device_labels_dict, get_energy, verbose=False):
 
     coast_str = '0.5'
     device_short_dict = {\
@@ -13,6 +13,9 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
             'di': 'ArcDipReal',
             'dr': 'Drift'
             }
+
+    # Reorder Arcs
+    plot_arcs=['S81', 'S12', 'S23', 'S78', 'S56', 'S67', 'S45', 'S34']
 
     const_device_short, const_sey_str, x_device_short, x_range_lower, x_range_higher = arguments
     const_device = device_short_dict[const_device_short]
@@ -27,6 +30,16 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
             break
     else:
         raise ValueError('Could not find a y_device!')
+
+    # Account for Low energy sims do not include drifts
+    if y_device == 'Drift' or x_device == 'Drift':
+        plot_dict_keys = []
+        print('Removing low energy scenarios.')
+        for key in dict_keys:
+            if get_energy(key) != '450GeV':
+                plot_dict_keys.append(key)
+    else:
+        plot_dict_keys = dict_keys
 
     for sey_ctr, sey in enumerate(sey_list):
         if round(sey,2) == float(const_sey_str):
@@ -49,25 +62,33 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
     const_data = pyecloud_device_easy(const_device, coast_str) * length[const_device]
 
     data = np.zeros(shape=(len(dict_keys),len(arcs),len(x_sey_list),2))
-    for key_ctr in xrange(len(dict_keys)):
+    for key_ctr, key in enumerate(dict_keys):
         const_hl = const_data[key_ctr,const_sey_ctr]
-        for arc_ctr in xrange(len(arcs)):
+        for arc_ctr, arc in enumerate(arcs):
             measured = hl_measured[key_ctr,arc_ctr]
+            if verbose:
+                print('%s %s %.1f' % (key, arc, measured))
             for x_ctr, x_sey in enumerate(x_sey_list):
                 x_hl = np.interp(x_sey,sey_list,x_data[key_ctr,:])
                 y_hl_list = y_data[key_ctr,:]
 
                 data[key_ctr,arc_ctr,x_ctr,0] = x_sey
-                if const_hl + np.min(y_hl_list) > measured or x_hl + np.max(y_hl_list) + const_hl < measured:
+                if const_hl + np.min(y_hl_list) + x_hl > measured or x_hl + np.max(y_hl_list) + const_hl < measured:
                     if verbose:
-                        print('continue for %.2f' % dip_sey)
+                        print('continue for %s %s %.2f' % (key, arc, x_sey))
+                    # else:
+                    #    print('measured: %2f\t min simulated: %2f\t max simulated: %2f' % (measured, const_hl+x_hl+np.min))
                     continue
                 y_hl = measured - x_hl - const_hl
                 data[key_ctr,arc_ctr,x_ctr,1] = np.interp(y_hl,y_data[key_ctr,:],sey_list)
 
     fig_ctr = 0
-    for arc_ctr, arc in enumerate(arcs):
-        if arc_ctr%4 == 0:
+    sp_ctr = 0
+    for arc in plot_arcs:
+        arc_ctr = arcs.index(arc)
+        sp_ctr %= 4
+        sp_ctr += 1
+        if sp_ctr == 1:
             fig = plt.figure()
             fig_ctr += 1
 
@@ -78,10 +99,12 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
             title_str += '\n %s SEY: %.2f.   Coasting beam: %s$\cdot 10^9$' % (device_labels_dict[const_device], const_sey, coast_str)
             plt.suptitle(title_str,fontsize=25)
 
-        sp = plt.subplot(2,2,arc_ctr%4+1)
+        sp = plt.subplot(2,2,sp_ctr)
 
         # pyecloud data, measured only for labels/title
         for key_ctr, key in enumerate(dict_keys):
+            if key not in plot_dict_keys:
+                continue
             hl = hl_measured[key_ctr,arc_ctr]
             label = scenarios_labels_dict[key]
             possible_xdata = data[key_ctr,arc_ctr,:,0]
@@ -94,14 +117,16 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
 
             sp.plot(xdata, ydata, label=label)
 
-        sp.axhline(const_sey, ls='--', color='black', label=device_labels_dict[const_device])
-
-
         sp.set_title('Arc %s' % arc, fontsize=20)
         sp.set_xlabel('%s SEY' % device_labels_dict[x_device])
         sp.set_ylabel('%s SEY' % device_labels_dict[y_device])
-        #sp.set_xlim(xlim)
-        #sp.set_ylim(ylim)
+
+        # Prevent too ugly plots
+        min_y, max_y = sp.get_ylim()
+        min_y = min(min_y,1.1)
+        max_y = max(max_y,1.2)
+        sp.set_ylim(min_y,max_y)
+        sp.set_xlim(x_begin,x_end)
 
         # Add vertical line for Quad SEY
         if args_l is not None:
@@ -109,5 +134,5 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
                 xx = float(xx_str)
                 sp.axhline(xx, ls='--', color='orange')
 
-        if arc_ctr % 4 == 3:
+        if sp_ctr == 2:
             sp.legend(bbox_to_anchor=(1.1, 1))
