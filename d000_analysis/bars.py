@@ -8,9 +8,9 @@ from simulation_parameters import get_sey_ctr, energy_list, intensity_list_float
 def main(hl_measured, hl_pyecloud, drift_sey, dip_sey, quad_sey, sey_list, devices, coast_strs, dict_keys, length, device_labels_dict, arcs):
 
     dev_sey_dict = {\
-            'ArcDipReal': get_sey_ctr(dip_sey, sey_list),
-            'ArcQuadReal': get_sey_ctr(quad_sey, sey_list),
-            'Drift': get_sey_ctr(drift_sey,sey_list)
+            'ArcDipReal': dip_sey,
+            'ArcQuadReal': quad_sey,
+            'Drift': drift_sey
             }
     dev_color_dict = {\
             'ArcDipReal': 'blue',
@@ -30,9 +30,9 @@ def main(hl_measured, hl_pyecloud, drift_sey, dip_sey, quad_sey, sey_list, devic
             measured[arc_ctr, energy_ctr, intensity_ctr] = hl_measured[key_ctr,arc_ctr]
 
         for dev_ctr, device in enumerate(devices):
-            sey_ctr = dev_sey_dict[device]
             for coast_ctr, coast_str in enumerate(coast_strs):
-                data[dev_ctr, coast_ctr, energy_ctr,intensity_ctr] = hl_pyecloud[key_ctr,dev_ctr,coast_ctr,sey_ctr] * length[device]
+                raw = hl_pyecloud[key_ctr,dev_ctr,coast_ctr,:] * length[device]
+                data[dev_ctr, coast_ctr, energy_ctr,intensity_ctr] = np.interp(dev_sey_dict[device],sey_list,raw)
 
     coast_ctr = 1
     coast_str = coast_strs[coast_ctr]
