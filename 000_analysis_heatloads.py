@@ -17,17 +17,19 @@ init_pyplot()
 
 # Arguments
 
-arg = argparse.ArgumentParser(description='Analysis scripts for \"SEY study arcs\".')
-arg.add_argument('-d', help='Simulated HL for every device.', action='store_true')
-arg.add_argument('-q', help='Measured and simulated HL for all Quads.', action='store_true')
-arg.add_argument('-m', help='Measured data with subtracted Imp/SR heat load.', action='store_true')
-arg.add_argument('-g', help='Global optimization for arcs, assumes equal SEY for all devices.', action='store_true')
-arg.add_argument('-a', help='Measured and simulated HL for all Arcs, assumes equal SEY for all devices.', action='store_true')
-arg.add_argument('-f', help='Full Output. Set all options above.', action='store_true')
-arg.add_argument('-o', help='Dual Optimization. Assumes Drift SEY equals Arc SEY.\n\
+parser = argparse.ArgumentParser(description='Analysis scripts for \"SEY study arcs\".')
+parser.add_argument('-p', help='Pyecloud HL for every device.', action='store_true')
+parser.add_argument('-q', help='Measured and simulated HL for all Quads.', action='store_true')
+parser.add_argument('-m', help='Measured data with subtracted Imp/SR heat load.', action='store_true')
+parser.add_argument('-g', help='Global optimization for arcs, assumes equal SEY for all devices.', action='store_true')
+parser.add_argument('-a', help='Measured and simulated HL for all Arcs, assumes equal SEY for all devices.', action='store_true')
+parser.add_argument('-f', help='Full Output. Set all options above.', action='store_true')
+parser.add_argument('-o', help='Dual Optimization. Assumes Drift SEY equals Arc SEY.\n\
         Devices: q, di, dr', nargs=5, metavar=('Const_device', 'SEY', 'Var_device', 'min', 'max_SEY'))
-arg.add_argument('-l', help='Show vertical line for dual Optimization.', metavar='SEY', type=float, default=None, nargs='+')
-args = arg.parse_args()
+parser.add_argument('-l', help='Show vertical line for dual Optimization.', metavar='SEY', type=float, default=None, nargs='+')
+parser.add_argument('-b', help='Bar plots to show the contribution of different devices to the totel heat load', metavar=('Drift SEY','Quad SEY'), nargs=2, type=float)
+
+args = parser.parse_args()
 
 if args.f:
     args.g = args.d = args.a = args.q = args.m = True
@@ -121,11 +123,10 @@ hl_pyecloud_beams = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),
 
 for key_ctr, key in enumerate(dict_keys):
     for device_ctr, device in enumerate(devices):
-        if device == 'Drift' and get_energy(key) == '450GeV':
-            # No E-Cloud expected here!
-            hl_pyecloud[key_ctr,device_ctr,:,:] = 0
-            continue
         for coast_ctr, coast_str in enumerate(coast_strs):
+            if device == 'Drift' and get_energy(key) == '450GeV' and not (coast_str != '0.0' and get_intensity(key) == '1.1e11'):
+                # print(coast_str, get_intensity(key))
+                continue
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
                 try:
@@ -167,7 +168,7 @@ if args.g:
 
 # All devices
 if args.d:
-    from d000_analysis.devices import main
+    from d000_analysis.pyecloud import main
     main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict, get_energy, get_intensity)
 
 # Arcs
