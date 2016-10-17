@@ -48,3 +48,15 @@ def get_intensity(key):
     label = scenarios_labels_dict[key]
     info = re.search(re_intensity,label)
     return info.group(1)
+
+def get_sey_ctr(get_sey, sey_list):
+    for sey_ctr, sey in enumerate(sey_list):
+        if round(sey,2) == float(get_sey):
+            return sey_ctr
+    else:
+        raise ValueError('Sey %.2f could not be found!' % float(get_sey))
+
+intensity_list = ['0.7e11', '0.9e11', '1.1e11']
+energy_list = ['450GeV', '6.5TeV']
+
+intensity_list_float = [float(string) for string in intensity_list]
