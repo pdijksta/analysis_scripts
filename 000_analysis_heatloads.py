@@ -27,7 +27,7 @@ parser.add_argument('-f', help='Full Output. Set all options above.', action='st
 parser.add_argument('-o', help='Dual Optimization. Assumes Drift SEY equals Arc SEY.\n\
         Devices: q, di, dr', nargs=5, metavar=('Const_device', 'SEY', 'Var_device', 'min', 'max_SEY'))
 parser.add_argument('-l', help='Show vertical line for dual Optimization.', metavar='SEY', type=float, default=None, nargs='+')
-parser.add_argument('-b', help='Bar plots to show the contribution of different devices to the totel heat load', metavar=('Drift SEY','Quad SEY'), nargs=2, type=float)
+parser.add_argument('-b', help='Bar plots to show the contribution of different devices to the totel heat load', metavar=('Drift SEY', 'Dipole SEY', 'Quad SEY'), nargs=3, type=float)
 
 args = parser.parse_args()
 
@@ -167,7 +167,7 @@ if args.g:
     main(dict_keys,arcs,sey_list,coast_strs,hl_pm_measured,hl_pyecloud, length, devices)
 
 # All devices
-if args.d:
+if args.p:
     from d000_analysis.pyecloud import main
     main(devices,device_labels_dict, sey_list, coast_strs, dict_keys, hl_pyecloud, scenarios_labels_dict, length, coast_linestyle_dict, get_energy, get_intensity)
 
@@ -186,5 +186,11 @@ if args.m:
     from d000_analysis.measured import main
     main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict,
             get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty, len_arc_quad_dict)
+
+# Bar plots
+if args.b:
+    from d000_analysis.bars import main
+    drift_sey, dip_sey, quad_sey = args.b
+    main(hl_measured, hl_pyecloud, drift_sey, dip_sey, quad_sey, sey_list, devices, coast_strs, dict_keys,length, device_labels_dict, arcs)
 
 plt.show()
