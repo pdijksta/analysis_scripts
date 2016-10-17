@@ -92,20 +92,20 @@ quad_pm_uncertainty = np.empty_like(hl_pm_measured_quads)
 
 for key_ctr, key in enumerate(dict_keys):
     # Model
-    hl_model_arcs[key_ctr] = heatloads_dict[key][model_key][0]
-    hl_model_quads[key_ctr] = heatloads_dict[key][imp_key][0]
+    hl_model_arcs[key_ctr] = heatloads_dict[key][model_key]['Heat_load']
+    hl_model_quads[key_ctr] = heatloads_dict[key][imp_key]['Heat_load']
 
     # Arcs
     for arc_ctr,arc in enumerate(arcs):
-        hl_measured[key_ctr,arc_ctr] = heatloads_dict[key][arc][0] - heatloads_dict[key][arc][2]
-        arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[key][arc][1]
+        hl_measured[key_ctr,arc_ctr] = heatloads_dict[key][arc]['Heat_load'] - heatloads_dict[key][arc]['Offset']
+        arc_uncertainty[key_ctr,arc_ctr] = heatloads_dict[key][arc]['Sigma']
     hl_measured[key_ctr,:] -= hl_model_arcs[key_ctr]
 
     # Quads
     for quad_ctr,quad in enumerate(quads):
         # heat loads per m are needed here
-        hl_pm_measured_quads[key_ctr,quad_ctr] = heatloads_dict[key][quad][0] / len_arc_quad_dict[quad]
-        quad_pm_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad][1] / len_arc_quad_dict[quad]
+        hl_pm_measured_quads[key_ctr,quad_ctr] = (heatloads_dict[key][quad]['Heat_load'] - heatloads_dict[key][quad]['Offset'])/ len_arc_quad_dict[quad]
+        quad_pm_uncertainty[key_ctr,quad_ctr] = heatloads_dict[key][quad]['Sigma'] / len_arc_quad_dict[quad]
 
     hl_pm_measured_quads[key_ctr,:] -= hl_model_quads[key_ctr] / len_cell
 
