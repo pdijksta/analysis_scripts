@@ -47,7 +47,6 @@ def insert_to_nested_dict(dictionary, value, keys, must_enter=False, add_up=Fals
     elif must_enter:
         raise ValueError('Key %s already exists!' % last_key)
 
-
 for folder in all_files:
     file_info = re.search(folder_re,folder)
     if file_info is None:

@@ -82,6 +82,7 @@ class Handle_devs:
 
             if self.name == 'Arcs':
                 sp2 = sp.twinx()
+                sp2.grid('off')
                 sp2.set_ylabel('Heat Load [W/hc]')
                 yaxes_factor = self.length_dict[dev]
                 lower, higher = sp.get_ylim()
