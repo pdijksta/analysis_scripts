@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 
-from simulation_parameters import intensity_list, intensity_list_float, energy_list
+from simulation_parameters import *
 
 class Handle_devs:
     def __init__(self, devs_list, hl_pm_model, hl_pm_measured, dev_pm_uncertainty, get_energy, get_intensity, dict_keys, name, len_arc_quad_dict, model_label):
@@ -105,12 +105,9 @@ class Handle_devs:
                 sp.legend(bbox_to_anchor=(1.1, 1))
 
 
-def main(hl_pm_measured, hl_pm_measured_quads, dict_keys, arcs, quads, scenarios_labels_dict,
-        get_intensity, get_energy, hl_pm_model_arcs, hl_pm_model_quads, arc_pm_uncertainty, quad_pm_uncertainty, len_arc_quad_dict):
+# Arcs
+Handle_devs(arcs, hl_pm_model_arcs, hl_pm_measured, arc_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Arcs', len_arc_quad_dict, 'Imp+SR')
 
-    # Arcs
-    Handle_devs(arcs, hl_pm_model_arcs, hl_pm_measured, arc_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Arcs', len_arc_quad_dict, 'Imp+SR')
-
-    # Quads
-    Handle_devs(quads, hl_pm_model_quads, hl_pm_measured_quads, quad_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Quadrupoles', len_arc_quad_dict, 'Imp')
+# Quads
+Handle_devs(quads, hl_pm_model_quads, hl_pm_measured_quads, quad_pm_uncertainty, get_energy, get_intensity, dict_keys, 'Quadrupoles', len_arc_quad_dict, 'Imp')
 

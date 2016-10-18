@@ -3,9 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyecloud_device import pyecloud_device
 
+from simulation_parameters import *
+
 # Function for device
-def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, dict_keys, arcs,
-        hl_measured, sey_list, args_l, arguments, device_labels_dict, get_energy, verbose=False):
+def main(const_device_short, const_sey_str, x_device_short, x_range_lower, x_range_higher, args_l=None, verbose=False):
 
     coast_str = '0.5'
     device_short_dict = {\
@@ -17,7 +18,6 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
     # Reorder Arcs
     plot_arcs=['S81', 'S12', 'S23', 'S78', 'S56', 'S67', 'S45', 'S34']
 
-    const_device_short, const_sey_str, x_device_short, x_range_lower, x_range_higher = arguments
     const_device = device_short_dict[const_device_short]
     x_device = device_short_dict[x_device_short]
 
@@ -50,7 +50,7 @@ def main(hl_pyecloud, device_list, coast_strs, scenarios_labels_dict, length, di
         raise ValueError('Could not find a matching sey for const_sey %s' % const_sey_str)
 
 
-    pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, device_list, coast_strs, hl_pyecloud)
+    pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, devices, coast_strs, hl_pyecloud)
 
     x_begin = float(x_range_lower)
     x_end = float(x_range_higher)

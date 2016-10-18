@@ -3,9 +3,9 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-from simulation_parameters import get_sey_ctr, energy_list, intensity_list_float, get_energy, get_intensity, intensity_list
+from simulation_parameters import *
 
-def main(hl_measured, hl_pyecloud, drift_sey, dip_sey, quad_sey, sey_list, devices, coast_strs, dict_keys, length, device_labels_dict, arcs):
+def main(drift_sey, dip_sey, quad_sey):
 
     dev_sey_dict = {\
             'ArcDipReal': dip_sey,
