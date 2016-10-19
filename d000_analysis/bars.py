@@ -39,8 +39,10 @@ def main(drift_sey, dip_sey, quad_sey):
     width = 0.2
     xx = np.array(range(len(energy_list)))
 
+    max_yy = -np.inf
     for arc_ctr, arc in enumerate(arcs):
         sp_ctr = arc_ctr % 4 + 1
+
         if sp_ctr ==1:
             fig = plt.figure()
             title = 'Simulated heat loads for SEY Drift %.2f Dip %.2f Quad %.2f' % (drift_sey, dip_sey, quad_sey)
@@ -53,9 +55,7 @@ def main(drift_sey, dip_sey, quad_sey):
         sp.set_xticks(xx+1.5*width)
         sp.set_xticklabels([str(fl) for fl in energy_list])
         for intensity_ctr, intensity in enumerate(intensity_list_float):
-            prev_height = np.zeros_like(energy_list,float)
-            height = np.copy(prev_height)
-
+            # Measured
             for energy_ctr, energy in enumerate(energy_list):
                 xx_measured = [energy_ctr+intensity_ctr*width, energy_ctr + (intensity_ctr+1)*width]
                 yy_measured = [measured[arc_ctr,energy_ctr, intensity_ctr]]*2
@@ -64,14 +64,20 @@ def main(drift_sey, dip_sey, quad_sey):
                 else:
                     label = None
                 sp.plot(xx_measured, yy_measured, ls='--', color='black', label=label)
+
+            # Simulated
+            bottom = np.zeros_like(energy_list,float)
             for dev_ctr, device in enumerate(devices):
-                height += data[dev_ctr,coast_ctr,:,intensity_ctr]
+                height = data[dev_ctr,coast_ctr,:,intensity_ctr]
+
                 color = dev_color_dict[device]
                 if intensity_ctr == 0:
                     label = device_labels_dict[device]
                 else:
                     label = None
-                sp.bar(xx+width*intensity_ctr, height=height-prev_height, width=width, bottom=prev_height, color=color, label=label, alpha=0.5)
-                prev_height = np.copy(height)
+                sp.bar(xx+width*intensity_ctr, height=height, width=width, bottom=bottom, color=color, label=label, alpha=0.5)
+                bottom += height
+            max_yy = max(max_yy, *bottom)
+        sp.set_ylim(sp.get_ylim()[0], max_yy+10)
         if sp_ctr == 2:
             sp.legend(bbox_to_anchor=(1.1, 1))

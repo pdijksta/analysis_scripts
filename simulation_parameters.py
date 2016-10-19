@@ -7,6 +7,12 @@ from LHCMeasurementTools.LHC_Heatloads import magnet_length
 # Parameters of the study
 dict_keys = ['5219 1.8', '5222 2.3', '5223 3.0', '5219 0.92', '5222 1.63', '5223 2.3']
 
+intensity_list = ['0.7e11', '0.9e11', '1.1e11']
+energy_list = ['450GeV', '6.5TeV']
+
+intensity_list_float = [float(string) for string in intensity_list]
+
+
 scenarios_labels_dict = {\
         '5219 1.8':  '1.1e11 6.5TeV',
         '5219 0.92': '1.1e11 450GeV',
@@ -25,7 +31,6 @@ coast_linestyle_dict = {\
 coast_strs = coast_linestyle_dict.keys()
 coast_strs.sort(reverse=True)
 
-sey_list = np.arange(1.1,1.51,0.05)
 
 devices = ['ArcDipReal', 'ArcQuadReal', 'Drift']
 device_labels_dict = {\
@@ -58,11 +63,6 @@ def get_sey_ctr(get_sey, sey_list):
             return sey_ctr
     else:
         raise ValueError('Sey %.2f could not be found!' % float(get_sey))
-
-intensity_list = ['0.7e11', '0.9e11', '1.1e11']
-energy_list = ['450GeV', '6.5TeV']
-
-intensity_list_float = [float(string) for string in intensity_list]
 
 # Names of devices, regular expressions
 re_arc = re.compile('^S\d\d$')
@@ -107,6 +107,9 @@ for key in heatloads_dict[dict_keys[0]]:
         quads.append(key)
         len_arc_quad_dict[key] = len_q6_28
 
+
+## Open pickles
+
 with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
     heatloads_dict_pyecloud = cPickle.load(pickle_file)
 
@@ -146,6 +149,8 @@ hl_pm_model_quads = hl_model_quads / len_cell
 arc_pm_uncertainty = arc_uncertainty / len_cell
 
 # Simulation data
+sey_list = np.arange(1.1,1.51,0.05)
+
 hl_pyecloud = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),len(sey_list)))
 hl_pyecloud_beams = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),len(sey_list),2))
 

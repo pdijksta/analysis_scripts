@@ -1,16 +1,11 @@
 # Written by Philipp Dijkstal, philipp.dijkstal@cern.ch
-
 import sys
-import cPickle
 import argparse
 import re
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from simulation_parameters import \
-        dict_keys, scenarios_labels_dict, coast_linestyle_dict, coast_strs, sey_list, devices, device_labels_dict, \
-        get_filln, get_energy, get_intensity
 from RcParams import init_pyplot
 init_pyplot()
 
@@ -32,7 +27,6 @@ args = parser.parse_args()
 
 if args.f:
     args.g = args.d = args.a = args.q = args.m = True
-
 
 # Plots
 plt.close('all')
