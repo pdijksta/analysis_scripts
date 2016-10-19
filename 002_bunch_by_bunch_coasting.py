@@ -13,17 +13,28 @@ from LHCMeasurementTools.LHC_Heatloads import magnet_length
 from RcParams import init_pyplot
 init_pyplot()
 
-parser = argparse.ArgumentParser(description='Show bunch by bunch power losses from PyECLOUD simulations and measurements.')
-parser.add_argument('q', help='Quadrupole SEY', metavar='Quad SEY', type=float)
-parser.add_argument('d', help='Drift SEY', metavar='Drift SEY', type=float)
-parser.add_argument('beam', help='B1 | B2', type=str, metavar='BEAM')
-args = parser.parse_args()
+parser = argparse.ArgumentParser(description=\
+        'Show bunch by bunch power losses from PyECLOUD simulations and measurements.')
 
-if args.beam != 'B1' and args.beam != 'B2':
-    raise ValueError('Incorrect specification of beam!')
+parser.add_argument('q', help='Assumed quadrupole SEY', metavar='Quad SEY', type=float)
+parser.add_argument('d', help='Assumed drift SEY', metavar='Drift SEY', type=float)
+parser.add_argument('beam', help='B1 | B2', type=str, metavar='Beam')
+parser.add_argument('filln', help='5219 | 5222 | 5223', type=str, metavar='Fill')
+parser.add_argument('energy', help='450 | 6500', type=str, metavar='Energy')
+args = parser.parse_args()
 
 assumed_quad_sey = args.q
 assumed_drift_sey = args.d
+beam = args.beam
+filln = args.filln
+energy = args.energy
+
+if beam == 'B1':
+    colorbeam = 'b'
+elif beam == 'B2':
+    colorbeam = 'r'
+else:
+    raise ValueError('Incorrect specification of beam!')
 
 T_rev = 88.9e-6
 
@@ -32,8 +43,6 @@ beam_snapshot_folder = './beam_snapshots'
 
 machine_name = 'LHC'
 devices = ['Drift', 'ArcDipReal', 'ArcQuadReal']
-device_name = 'ArcDipReal'
-beam_name = '6500GeV'
 
 coast_strs = ['1.0', '0.5', '0.0']
 coast_linestyle_dict = {\
@@ -47,27 +56,28 @@ l_dip = 3 * magnet_length['special_HC_D2'][0]
 l_quad = magnet_length['special_HC_Q1'][0]
 l_drift = l_hc - l_dip - l_quad
 
-#beam_snapshot = 'Fill5219_cut0.920h_450GeV_for_triplets_B1.mat'
-beam_snapshot = 'Fill5219_cut1.800h_6500GeV_for_triplets_%s.mat' % args.beam
+beam_snapshot_dict = {'5219': {}, '5222': {}, '5223': {}}
+beam_snapshot_dict['5219']['450'] = '0.920'
+beam_snapshot_dict['5219']['6500'] = '1.800'
+beam_snapshot_dict['5222']['450'] = '1.630'
+beam_snapshot_dict['5222']['6500'] = '2.300'
+beam_snapshot_dict['5223']['450'] = '2.300'
+beam_snapshot_dict['5223']['6500'] = '3.000'
+
+time = beam_snapshot_dict[filln][energy]
+
+beam_snapshot = 'Fill%s_cut%sh_%sGeV_for_triplets_%s.mat' % (filln, time, energy, beam)
 
 ob_snapshot = mlo.myloadmat_to_obj(beam_snapshot_folder+'/'+beam_snapshot)
 meas_loss_per_meter = ob_snapshot.bunch_power_loss/23./2./8./l_hc
 meas_loss_per_hc = meas_loss_per_meter * l_hc
 
 sey_vect = np.arange(1.10,1.501,.05)
-
-if 'B1' in beam_snapshot:
-    colorbeam = 'b'
-elif 'B2' in beam_snapshot:
-    colorbeam = 'r'
-else:
-    raise ValueError('Beam type (B1 or B2) could not be infered from the name of the snapshot')
-
 N_sims = len(sey_vect)
 
 def get_simulation_ob(device_name, sey, coast_str='0.5'):
 
-    sim_ident = '%s_%s_%s_%s_sey%.2f_coast%s' % (beam_snapshot.split('.mat')[0], machine_name, device_name, beam_name, sey, coast_str)
+    sim_ident = '%s_%s_%s_%s_sey%.2f_coast%s' % (beam_snapshot.split('.mat')[0], machine_name, device_name, energy+'GeV', sey, coast_str)
     ob = mlo.myloadmat_to_obj(main_folder + '/' + sim_ident+'/Pyecltest.mat')
     # from Gianni
     t_bun = np.arange(0.,np.max(ob.t),  ob.b_spac)
@@ -78,8 +88,14 @@ def get_simulation_ob(device_name, sey, coast_str='0.5'):
 
     return sim_loss_per_meter, ob, t_bun
 
-quad_contribution_per_meter, quad_ob,t_bun = get_simulation_ob('ArcQuadReal', assumed_quad_sey)
-drift_contribution_per_meter, drift_ob,t_bun = get_simulation_ob('Drift', assumed_drift_sey)
+try:
+    quad_contribution_per_meter, quad_ob,t_bun = get_simulation_ob('ArcQuadReal', assumed_quad_sey)
+except IOError:
+    quad_contribution_per_meter = 0
+try:
+    drift_contribution_per_meter, drift_ob,t_bun = get_simulation_ob('Drift', assumed_drift_sey)
+except IOError:
+    drift_contribution_per_meter = 0
 
 quad_contribution_per_hc = quad_contribution_per_meter * l_quad
 drift_contribution_per_hc = drift_contribution_per_meter * l_drift
@@ -114,8 +130,6 @@ sp = None
 for coast_ctr, coast_str in enumerate(coast_strs):
     sp = plt.subplot(3,1,coast_ctr+1, sharex=sp)
     sp.set_ylabel('Power loss [W/hc]')
-    sp.fill_between(t_bun[:-1]/25e-9, t_bun_zeros, drift_contribution_per_hc, alpha=0.4, color='red', label='Drift 0.5 $\cdot10^9$ coasting')
-    sp.fill_between(t_bun[:-1]/25e-9, drift_contribution_per_hc, drift_contribution_per_hc+quad_contribution_per_hc, alpha=0.4, color='blue', label='Quad 0.5 $\cdot10^9$ coasting')
     sp.plot(meas_loss_per_hc, '.-', color='k', label='Measured', marker=None)
     sp.set_title('Dipole coasting beam %s$\cdot10^9$' % coast_str)
 
@@ -143,8 +157,10 @@ for coast_ctr, coast_str in enumerate(coast_strs):
             sp.plot(t_bun[:-1]/25e-9, sim_loss_per_hc, '.-', color=color_curr, label=label, marker=None)
 
         except IOError as err:
-            print('Got:', err)
-            raise
+            print('Got:', err, sey, coast_str)
+
+    sp.fill_between(t_bun[:-1]/25e-9, t_bun_zeros, drift_contribution_per_hc, alpha=0.4, color='red', label='Drift 0.5 $\cdot10^9$ coasting')
+    sp.fill_between(t_bun[:-1]/25e-9, drift_contribution_per_hc, drift_contribution_per_hc+quad_contribution_per_hc, alpha=0.4, color='blue', label='Quad 0.5 $\cdot10^9$ coasting')
 
     if coast_ctr == 0:
         sp.legend(bbox_to_anchor=(1, 1.02),  loc='upper left', title='Dip SEY')
@@ -199,7 +215,7 @@ for fig_nr in xrange(len(coast_strs)+1):
                     sp.plot(t_bun[min_bunch_nr:-1]/25e-9, contribution_per_meter[min_bunch_nr:], '.-', color=color_curr, label=label, ls=ls, marker=None)
 
                 except IOError as err:
-                    print('Got:', err)
+                    print('Got:', err, device, coast_str, sey)
 
         if sp_ctr == 1:
             sp.legend(bbox_to_anchor=(1, 1.02),  loc='upper left', title='SEY')
