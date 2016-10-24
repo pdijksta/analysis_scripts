@@ -12,6 +12,7 @@ energy_list = ['450GeV', '6.5TeV']
 
 intensity_list_float = [float(string) for string in intensity_list]
 
+root_dir = './all_data'
 
 scenarios_labels_dict = {\
         '5219 1.8':  '1.1e11 6.5TeV',
@@ -110,7 +111,7 @@ for key in heatloads_dict[dict_keys[0]]:
 
 ## Open pickles
 
-with open('./heatload_pyecloud.pkl', 'r') as pickle_file:
+with open(root_dir+'/heatload_pyecloud.pkl', 'r') as pickle_file:
     heatloads_dict_pyecloud = cPickle.load(pickle_file)
 
 # Measured data
@@ -157,9 +158,6 @@ hl_pyecloud_beams = np.zeros(shape=(len(dict_keys),len(devices),len(coast_strs),
 for key_ctr, key in enumerate(dict_keys):
     for device_ctr, device in enumerate(devices):
         for coast_ctr, coast_str in enumerate(coast_strs):
-            if device == 'Drift' and get_energy(key) == '450GeV' and not (coast_str != '0.0' and get_intensity(key) == '1.1e11'):
-                # print(coast_str, get_intensity(key))
-                continue
             for sey_ctr, sey in enumerate(sey_list):
                 sey_str = '%.2f' % sey
                 try:

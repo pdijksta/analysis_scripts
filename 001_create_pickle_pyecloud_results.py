@@ -1,23 +1,40 @@
-# This script gathers heatloads from pyecload simulations and stores them in a pickle dict
-
 import os
 import sys
 import cPickle
 import re
+import argparse
 
 import scipy.io as sio
 import numpy as np
 from scipy.constants import e as const_e
 
-# Config
+# Argparse
+default_root_dir = './all_data'
 
-root_dir = './all_data'
-hl_pkl_name = './heatload_pyecloud.pkl'
-nel_hist_pkl_name = './nel_hist_pyecloud.pkl'
+parser = argparse.ArgumentParser(description='This script gathers heatloads from pyecload simulations and stores them in a pickle dict')
+parser.add_argument('-d', help='Delete old pickle and build completely new one. Default: None', action='store_false')
+parser.add_argument('-r', help='Root directory. Default: %s' % default_root_dir, metavar='DIR', default=default_root_dir)
+
+args = parser.parse_args()
+root_dir = args.r
+
+if not os.path.isdir(root_dir):
+    raise ValueError('DIR is not a directory')
+
+# Config
+hl_pkl_name = root_dir + '/heatload_pyecloud.pkl'
+nel_hist_pkl_name = root_dir + '/nel_hist_pyecloud.pkl'
 fail_name = './fail_list.txt'
 
-hl_dict = {}
-nel_hist_dict = {}
+if args.d:
+    hl_dict = {}
+    nel_hist_dict = {}
+else:
+    with open(hl_pkl_name,'r') as f:
+        hl_dict = cPickle.load(f)
+    with open(nel_hist_pkl_name,'r') as f:
+        nel_hist_dict = cPickle.load(f)
+
 all_files = os.listdir(root_dir)
 # Regular Expression for the folder names
 folder_re = re.compile('^Fill(\d+)_cut(\d+\.\d[1-9]*)0*h_\d+GeV_for_triplets_(B[1,2])_LHC_([A-Za-z]+)_\d+GeV_sey([\d\.]+)_coast([\d\.]+)$')
@@ -29,6 +46,7 @@ fail_lines = ''
 fail_lines_IO = ''
 const_LHC_frev = 11.2455e3
 
+# Functions
 def insert_to_nested_dict(dictionary, value, keys, must_enter=False, add_up=False):
     """
     Inserts value to nested dictionary. The location is specified by keys.
@@ -47,6 +65,19 @@ def insert_to_nested_dict(dictionary, value, keys, must_enter=False, add_up=Fals
     elif must_enter:
         raise ValueError('Key %s already exists!' % last_key)
 
+def check_if_already_exist(dictionary, keys):
+    """
+    Returns True if a nested dict with the keys in the correct order does exist.
+    """
+    try:
+        for key in keys:
+            dictionary = dictionary[key]
+    except KeyError:
+        return False
+    else:
+        return True
+
+# Main loop
 for folder in all_files:
     file_info = re.search(folder_re,folder)
     if file_info is None:
@@ -62,6 +93,10 @@ for folder in all_files:
 
     # No need to keep fill and time separate
     main_key = filln + ' ' + time_of_interest
+    keys = [main_key, device, coast, sey]
+
+    if not args.d and check_if_already_exist(hl_dict, keys):
+        continue
 
     mat_str = root_dir + '/' + folder + '/Pyecltest.mat'
     if not os.path.isfile(mat_str):
@@ -84,7 +119,6 @@ for folder in all_files:
     heatload = np.sum(matfile['energ_eV_impact_hist'])*const_LHC_frev*const_e
     e_transverse_hist = np.sum(matfile['nel_hist'],axis=0)
 
-    keys = [main_key, device, coast, sey]
 
     insert_to_nested_dict(hl_dict, heatload, keys+['Total'], add_up=True)
     insert_to_nested_dict(hl_dict, 1, keys+['Beam_nr'], add_up=True)
@@ -96,12 +130,12 @@ for folder in all_files:
 insert_to_nested_dict(nel_hist_dict, matfile['xg_hist'][0], ['xg_hist'], must_enter=True)
 
 with open(hl_pkl_name, 'w') as pkl_file:
-    cPickle.dump(hl_dict, pkl_file, 2)
+    cPickle.dump(hl_dict, pkl_file, -1)
 
 with open(nel_hist_pkl_name, 'w') as pkl_file:
-    cPickle.dump(nel_hist_dict, pkl_file, 2)
+    cPickle.dump(nel_hist_dict, pkl_file, -1)
 
-print(fail_ctr, success_ctr)
+print('%i simulations were successful while %i failed.' % (success_ctr,fail_ctr))
 print(fail_lines)
 print('IO')
 print(fail_lines_IO)
