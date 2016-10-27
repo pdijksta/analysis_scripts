@@ -96,8 +96,9 @@ for folder in all_files:
     keys = [main_key, device, coast, sey]
 
     if not args.d and check_if_already_exist(hl_dict, keys):
+        print('Continuing for', keys)
         continue
-
+    
     mat_str = root_dir + '/' + folder + '/Pyecltest.mat'
     if not os.path.isfile(mat_str):
         print('Warning: file %s does not exist' % mat_str)
@@ -135,7 +136,7 @@ with open(hl_pkl_name, 'w') as pkl_file:
 with open(nel_hist_pkl_name, 'w') as pkl_file:
     cPickle.dump(nel_hist_dict, pkl_file, -1)
 
-print('%i simulations were successful while %i failed.' % (success_ctr,fail_ctr))
+print('%i simulations were successful and %i failed.' % (success_ctr,fail_ctr))
 print(fail_lines)
 print('IO')
 print(fail_lines_IO)
