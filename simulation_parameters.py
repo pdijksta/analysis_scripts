@@ -90,7 +90,7 @@ length['Drift'] = len_cell - length['ArcDipReal'] - length['ArcQuadReal']
 length['HalfCell'] = len_cell
 
 # Import nested dictionaries
-with open('./heatload_arcs.pkl', 'r') as pickle_file:
+with open('./heatload_arcs2.pkl', 'r') as pickle_file:
     heatloads_dict = cPickle.load(pickle_file)
 
 # Define arcs and quads and store their lengths

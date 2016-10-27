@@ -8,7 +8,6 @@ from simulation_parameters import *
 # DEFINE
 MIN, MAX = 0, 1
 
-
 one_list = np.ones_like(sey_list)
 pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, devices, coast_strs, hl_pyecloud)
 
