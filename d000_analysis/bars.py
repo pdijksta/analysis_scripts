@@ -77,7 +77,7 @@ def main(drift_sey, dip_sey, quad_sey):
                     label = None
                 sp.bar(xx+width*intensity_ctr, height=height, width=width, bottom=bottom, color=color, label=label, alpha=0.5)
                 bottom += height
-            max_yy = max(max_yy, np.max(bottom))
+            max_yy = np.max(hl_measured)
         sp.set_ylim(sp.get_ylim()[0], max_yy+10)
         if sp_ctr == 2:
             sp.legend(bbox_to_anchor=(1.1, 1))
