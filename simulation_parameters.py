@@ -65,6 +65,14 @@ def get_sey_ctr(get_sey, sey_list):
     else:
         raise ValueError('Sey %.2f could not be found!' % float(get_sey))
 
+def get_energy_intensity_ctr(key):
+    intensity = get_intensity(key)
+    energy = get_energy(key)
+
+    intensity_ctr = intensity_list.index(intensity)
+    energy_ctr = energy_list.index(energy)
+    return energy_ctr, intensity_ctr
+
 # Names of devices, regular expressions
 re_arc = re.compile('^S\d\d$')
 re_quad = re.compile('^Q06[LR][1258]$')
@@ -73,7 +81,7 @@ re_quad_28 = re.compile('^Q06[LR][28]$')
 
 model_key = 'Imp+SR'
 imp_key = 'Imp'
-#sr_key = 'SR' # not needed
+sr_key = 'SR'
 
 # Lengths from dictionary
 len_dip = magnet_length['special_HC_D2'][0]
@@ -107,7 +115,8 @@ for key in heatloads_dict[dict_keys[0]]:
     elif re_quad_28.match(key):
         quads.append(key)
         len_arc_quad_dict[key] = len_q6_28
-
+arcs.sort()
+quads.sort()
 
 ## Open pickles
 
@@ -119,7 +128,9 @@ hl_measured = np.empty(shape=(len(dict_keys),len(arcs)))
 hl_pm_measured_quads = np.empty(shape=(len(dict_keys),len(quads)))
 
 hl_model_arcs = np.empty(shape=(len(dict_keys),))
-hl_model_quads = np.copy(hl_model_arcs)
+hl_imp_arcs = np.empty(shape=(len(dict_keys),))
+hl_sr_arcs = np.empty(shape=(len(dict_keys),))
+hl_model_quads = np.empty_like(hl_model_arcs)
 
 arc_uncertainty = np.empty_like(hl_measured)
 quad_pm_uncertainty = np.empty_like(hl_pm_measured_quads)
@@ -128,6 +139,8 @@ for key_ctr, key in enumerate(dict_keys):
     # Model
     hl_model_arcs[key_ctr] = heatloads_dict[key][model_key]['Heat_load']
     hl_model_quads[key_ctr] = heatloads_dict[key][imp_key]['Heat_load']
+    hl_imp_arcs[key_ctr] = heatloads_dict[key][imp_key]['Heat_load']
+    hl_sr_arcs[key_ctr] = heatloads_dict[key][sr_key]['Heat_load']
 
     # Arcs
     for arc_ctr,arc in enumerate(arcs):
@@ -146,6 +159,8 @@ for key_ctr, key in enumerate(dict_keys):
 # Heat load per m
 hl_pm_measured = hl_measured / len_cell
 hl_pm_model_arcs = hl_model_arcs / len_cell
+hl_pm_sr_arcs = hl_sr_arcs / len_cell
+hl_pm_imp_arcs = hl_sr_arcs / len_cell
 hl_pm_model_quads = hl_model_quads / len_cell
 arc_pm_uncertainty = arc_uncertainty / len_cell
 
