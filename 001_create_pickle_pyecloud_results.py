@@ -7,6 +7,7 @@ import argparse
 import scipy.io as sio
 import numpy as np
 from scipy.constants import e as const_e
+from scipy.io.matlab.miobase import MatReadError
 
 # Argparse
 default_root_dir = './all_data'
@@ -109,7 +110,7 @@ for folder in all_files:
     print('Trying to read %s.' % mat_str)
     try:
         matfile = sio.loadmat(mat_str)
-    except IOError:
+    except (IOError, MatReadError):
         print('IOError')
         fail_ctr += 1
         fail_lines_IO += folder + '\n'
