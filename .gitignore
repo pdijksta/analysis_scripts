@@ -5,3 +5,7 @@ all_data/
 beam_snapshots/
 config/
 *.txt
+presentation/
+seeding/
+.project
+.pydevproject
