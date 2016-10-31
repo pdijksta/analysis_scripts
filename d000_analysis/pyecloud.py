@@ -12,6 +12,11 @@ intensity_ls_dict = {\
         '1.1e11': '-'
         }
 
+energy_ls_dict = {\
+        '450GeV': '--',
+        '6.5TeV': '-'
+        }
+
 one_list = np.ones_like(sey_list)
 pyecloud_device_easy = lambda device, coast_str: pyecloud_device(device, coast_str, devices, coast_strs, hl_pyecloud)
 
@@ -55,6 +60,7 @@ for dev_ctr, device in enumerate(devices):
     unscaled_min, unscaled_max =  sp.get_ylim()
     sp2.set_ylim(axes_factor*unscaled_min,axes_factor*unscaled_max)
 
+# For each coasting str
 for coast_ctr, coast_str in enumerate(coast_strs):
     fig = plt.figure()
     title_str = 'Heat loads assuming a coasting beam of %s e9' % coast_str
@@ -80,11 +86,11 @@ for coast_ctr, coast_str in enumerate(coast_strs):
 
             energy = get_energy(sce)
             energy_ctr = energy_list.index(energy)
-            color = colors[energy_ctr][u'color']
+            color = colors[intensity_ctr][u'color']
 
-            ls = intensity_ls_dict[intensity]
-            if dev_ctr ==1 and energy_ctr == 0:
-                label = scenarios_labels_dict[sce]
+            ls = energy_ls_dict[energy]
+            if dev_ctr == 1 and ls == '-' :
+                label = intensity
             elif dev_ctr == 2 and intensity_ctr == 2:
                 label = energy
             else:
