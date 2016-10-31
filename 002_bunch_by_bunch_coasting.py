@@ -104,7 +104,7 @@ plt.close('all')
 
 ###
 fig = plt.figure()
-title_str = 'Electrons and protons in the machine'
+title_str = 'Electrons and protons in the machine, Fill %s Energy %s GeV' % (filln, energy)
 fig.canvas.set_window_title(title_str)
 plt.suptitle(title_str, fontsize=25)
 
@@ -118,7 +118,7 @@ sp_el.set_ylabel('Electrons [1/m]')
 
 ###
 fig = plt.figure()
-title_str = 'Comparison of measured to simulated bunch by bunch power losses %s.' % args.beam
+title_str = 'Comparison of measured to simulated bunch by bunch power losses %s Fill %s %s GeV.' % (args.beam, filln, energy)
 fig.canvas.set_window_title(title_str)
 title_str += '\nAssumed Quad/Drift SEY: %.2f/%.2f' % (assumed_quad_sey,assumed_drift_sey)
 plt.suptitle(title_str, fontsize=25)
@@ -176,10 +176,9 @@ for fig_nr in xrange(len(coast_strs)+1):
     fig = plt.figure()
     window_title_str = 'Simulated bunch by bunch power losses for different devices %i.' % fig_nr
     fig.canvas.set_window_title(window_title_str)
-    if fig_nr == fig_all_nr:
-        suptitle_str = 'Simulated bunch power losses'
-    else:
-        suptitle_str = 'Simulated bunch power losses for %s e9 coasting beam' % coast_strs[fig_nr]
+    suptitle_str = 'Simulated bunch power losses %s %s GeV' % (filln, energy)
+    if fig_nr != fig_all_nr:
+        suptitle_str += ' for %s e9 coasting' % coast_strs[fig_nr]
     plt.suptitle(suptitle_str,fontsize=25)
 
     sp = None
